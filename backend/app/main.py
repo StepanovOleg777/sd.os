@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from backend.app.api.chat import router as chat_router
+from backend.app.api.voice import router as voice_router
 from backend.app.core.config import (
     STATIC_DIR,
     TEMPLATES_DIR,
@@ -31,6 +32,7 @@ templates = Jinja2Templates(
 
 
 app.include_router(chat_router)
+app.include_router(voice_router)
 
 
 @app.get(

@@ -14,11 +14,18 @@
 
     --user-message: #24262b;
 
+    --recording: #d75f68;
+
     --radius-small: 10px;
     --radius-medium: 16px;
     --radius-large: 22px;
 
     --content-width: 900px;
+
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
 }
 
 
@@ -31,22 +38,36 @@ html,
 body {
     width: 100%;
     height: 100%;
+
     margin: 0;
 }
 
 
+html {
+    background: var(--bg-primary);
+}
+
+
 body {
+    min-width: 280px;
+
     font-family:
         Inter,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
         sans-serif;
 
     background: var(--bg-primary);
     color: var(--text-primary);
 
     overflow: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
 
 
@@ -58,7 +79,14 @@ textarea {
 
 button {
     border: 0;
+
+    -webkit-tap-highlight-color: transparent;
 }
+
+
+/* =========================================================
+   APP
+   ========================================================= */
 
 
 .app {
@@ -67,17 +95,29 @@ button {
 
     width: 100%;
     height: 100vh;
+    height: 100dvh;
+
+    min-height: 0;
 }
 
 
+/* =========================================================
+   TOPBAR
+   ========================================================= */
+
+
 .topbar {
-    height: 68px;
+    min-height: 68px;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
 
-    padding: 0 28px;
+    padding:
+        var(--safe-top)
+        calc(28px + var(--safe-right))
+        0
+        calc(28px + var(--safe-left));
 
     border-bottom: 1px solid var(--border);
 
@@ -91,6 +131,8 @@ button {
     display: flex;
     align-items: center;
 
+    min-width: 0;
+
     gap: 12px;
 }
 
@@ -98,6 +140,8 @@ button {
 .brand-mark {
     width: 34px;
     height: 34px;
+
+    flex: 0 0 34px;
 
     display: flex;
     align-items: center;
@@ -115,6 +159,8 @@ button {
 .brand-text {
     display: flex;
     align-items: baseline;
+
+    min-width: 0;
 
     gap: 7px;
 }
@@ -139,6 +185,8 @@ button {
     display: flex;
     align-items: center;
 
+    flex-shrink: 0;
+
     gap: 8px;
 
     color: var(--text-secondary);
@@ -151,10 +199,17 @@ button {
     width: 7px;
     height: 7px;
 
+    flex-shrink: 0;
+
     border-radius: 50%;
 
     background: #68b684;
 }
+
+
+/* =========================================================
+   CHAT
+   ========================================================= */
 
 
 .chat {
@@ -169,6 +224,11 @@ button {
 }
 
 
+/* =========================================================
+   WELCOME
+   ========================================================= */
+
+
 .welcome {
     position: absolute;
 
@@ -181,7 +241,10 @@ button {
     flex-direction: column;
     align-items: center;
 
-    width: 100%;
+    width: min(
+        calc(100% - 32px),
+        700px
+    );
 
     padding: 20px;
 
@@ -199,7 +262,10 @@ button {
     pointer-events: none;
 
     transform:
-        translate(-50%, calc(-50% - 10px));
+        translate(
+            -50%,
+            calc(-50% - 10px)
+        );
 }
 
 
@@ -228,7 +294,13 @@ button {
 .welcome h1 {
     margin: 0;
 
-    font-size: 30px;
+    font-size:
+        clamp(
+            25px,
+            4vw,
+            30px
+        );
+
     font-weight: 500;
 
     letter-spacing: -0.03em;
@@ -236,23 +308,63 @@ button {
 
 
 .welcome p {
-    margin: 10px 0 0;
+    margin:
+        10px
+        0
+        0;
 
     color: var(--text-secondary);
 
-    font-size: 15px;
+    font-size:
+        clamp(
+            14px,
+            2vw,
+            15px
+        );
 }
+
+
+/* =========================================================
+   MESSAGES
+   ========================================================= */
 
 
 .messages {
     flex: 1;
 
+    overflow-x: hidden;
     overflow-y: auto;
+
+    overscroll-behavior: contain;
 
     padding:
         40px
-        24px
-        170px;
+        max(
+            24px,
+            var(--safe-right)
+        )
+        170px
+        max(
+            24px,
+            var(--safe-left)
+        );
+
+    scrollbar-width: thin;
+    scrollbar-color:
+        var(--border)
+        transparent;
+}
+
+
+.messages::-webkit-scrollbar {
+    width: 7px;
+}
+
+
+.messages::-webkit-scrollbar-thumb {
+    background: var(--border);
+
+    border-radius: 10px;
 }
 
 
@@ -280,13 +392,17 @@ button {
 
 
 .message-content {
-    max-width: min(720px, 85%);
+    max-width: min(
+        720px,
+        85%
+    );
 
     font-size: 15px;
     line-height: 1.65;
 
     white-space: pre-wrap;
-    word-break: break-word;
+
+    overflow-wrap: anywhere;
 }
 
 
@@ -314,22 +430,41 @@ button {
 }
 
 
+/* =========================================================
+   COMPOSER
+   ========================================================= */
+
+
 .composer-wrapper {
     position: absolute;
 
     left: 50%;
-    bottom: 22px;
 
-    transform: translateX(-50%);
+    bottom:
+        calc(
+            22px
+            + var(--safe-bottom)
+        );
 
-    width: min(
-        calc(100% - 40px),
-        var(--content-width)
-    );
+    transform:
+        translateX(-50%);
+
+    width:
+        min(
+            calc(
+                100%
+                - 40px
+                - var(--safe-left)
+                - var(--safe-right)
+            ),
+            var(--content-width)
+        );
 }
 
 
 .composer {
+    position: relative;
+
     display: flex;
     align-items: flex-end;
 
@@ -341,19 +476,32 @@ button {
         10px
         18px;
 
-    border: 1px solid var(--border);
+    border:
+        1px solid
+        var(--border);
 
-    border-radius: var(--radius-large);
+    border-radius:
+        var(--radius-large);
 
-    background: var(--bg-secondary);
+    background:
+        var(--bg-secondary);
 
     box-shadow:
-        0 12px 35px rgba(0, 0, 0, 0.25);
+        0 12px 35px
+        rgba(0, 0, 0, 0.25);
 }
+
+
+/* =========================================================
+   INPUT
+   ========================================================= */
 
 
 #message-input {
     flex: 1;
+
+    width: 100%;
+    min-width: 0;
 
     min-height: 32px;
     max-height: 180px;
@@ -368,18 +516,56 @@ button {
     outline: none;
 
     background: transparent;
-    color: var(--text-primary);
 
-    font-size: 15px;
+    color:
+        var(--text-primary);
+
+    font-size: 16px;
     line-height: 20px;
 
     overflow-y: auto;
+
+    -webkit-appearance: none;
 }
 
 
 #message-input::placeholder {
-    color: var(--text-muted);
+    color:
+        var(--text-muted);
 }
+
+
+#message-input:disabled {
+    opacity: 0.7;
+}
+
+
+/*
+ * При записи textarea остаётся
+ * физически на том же месте.
+ *
+ * Поэтому composer не меняет
+ * размеры ни на один пиксель.
+ */
+#message-input.voice-input-hidden {
+    color: transparent;
+
+    caret-color: transparent;
+
+    pointer-events: none;
+
+    user-select: none;
+}
+
+
+#message-input.voice-input-hidden::placeholder {
+    color: transparent;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
 
 
 .icon-button,
@@ -387,7 +573,8 @@ button {
     width: 38px;
     height: 38px;
 
-    flex-shrink: 0;
+    flex:
+        0 0 38px;
 
     display: flex;
     align-items: center;
@@ -399,30 +586,73 @@ button {
 
     transition:
         background 120ms ease,
-        opacity 120ms ease;
+        color 120ms ease,
+        opacity 120ms ease,
+        transform 120ms ease;
 }
 
 
 .icon-button {
     background: transparent;
-    color: var(--text-secondary);
+
+    color:
+        var(--text-secondary);
 }
 
 
 .icon-button:hover {
-    background: var(--bg-elevated);
-    color: var(--text-primary);
+    background:
+        var(--bg-elevated);
+
+    color:
+        var(--text-primary);
+}
+
+
+.icon-button.recording {
+    background:
+        rgba(
+            215,
+            95,
+            104,
+            0.15
+        );
+
+    color:
+        var(--recording);
+
+    animation:
+        recording-pulse
+        1.4s
+        infinite;
+}
+
+
+.icon-button.processing {
+    opacity: 0.55;
+
+    cursor: wait;
 }
 
 
 .send-button {
-    background: var(--accent);
+    background:
+        var(--accent);
+
     color: #ffffff;
 }
 
 
 .send-button:hover {
-    background: var(--accent-hover);
+    background:
+        var(--accent-hover);
+}
+
+
+.send-button:active,
+.icon-button:active {
+    transform:
+        scale(0.94);
 }
 
 
@@ -435,16 +665,86 @@ button {
 }
 
 
+.icon-button:disabled,
 .send-button:disabled {
     opacity: 0.4;
+
     cursor: default;
 }
+
+
+/* =========================================================
+   VOICE WAVEFORM
+   ========================================================= */
+
+
+/*
+ * Waveform лежит поверх textarea.
+ *
+ * Она не участвует во flex-layout,
+ * поэтому форма ввода не становится выше.
+ */
+.voice-waveform-live {
+    position: absolute;
+
+    left: 22px;
+    right: 106px;
+
+    top: 50%;
+
+    height: 30px;
+
+    transform:
+        translateY(-50%);
+
+    display: flex;
+    align-items: center;
+
+    overflow: hidden;
+
+    pointer-events: none;
+
+    opacity: 0;
+
+    z-index: 2;
+
+    transition:
+        opacity
+        120ms
+        ease;
+}
+
+
+.voice-waveform-live.active {
+    opacity: 1;
+}
+
+
+.voice-waveform-live[hidden] {
+    display: none;
+}
+
+
+.voice-waveform-canvas {
+    display: block;
+
+    width: 100%;
+    height: 30px;
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   HINT
+   ========================================================= */
 
 
 .composer-hint {
     margin-top: 9px;
 
-    color: var(--text-muted);
+    color:
+        var(--text-muted);
 
     text-align: center;
 
@@ -453,18 +753,104 @@ button {
 
 
 .typing {
-    color: var(--text-secondary);
+    color:
+        var(--text-secondary);
 }
+
+
+/* =========================================================
+   RECORDING ANIMATION
+   ========================================================= */
+
+
+@keyframes recording-pulse {
+
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 0
+            rgba(
+                215,
+                95,
+                104,
+                0.25
+            );
+    }
+
+
+    50% {
+        box-shadow:
+            0 0 0 7px
+            rgba(
+                215,
+                95,
+                104,
+                0
+            );
+    }
+
+}
+
+
+/* =========================================================
+   TOUCH
+   ========================================================= */
+
+
+@media (hover: none) {
+
+    .icon-button:hover {
+        background:
+            transparent;
+
+        color:
+            var(--text-secondary);
+    }
+
+
+    .icon-button.recording:hover {
+        background:
+            rgba(
+                215,
+                95,
+                104,
+                0.15
+            );
+
+        color:
+            var(--recording);
+    }
+
+
+    .send-button:hover {
+        background:
+            var(--accent);
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
 
 
 @media (max-width: 700px) {
 
     .topbar {
-        height: 60px;
+        min-height: 60px;
 
-        padding:
-            0
-            16px;
+        padding-left:
+            calc(
+                16px
+                + var(--safe-left)
+            );
+
+        padding-right:
+            calc(
+                16px
+                + var(--safe-right)
+            );
     }
 
 
@@ -478,19 +864,81 @@ button {
     }
 
 
+    .welcome {
+        top: 38%;
+    }
+
+
+    .welcome-logo {
+        width: 56px;
+        height: 56px;
+
+        margin-bottom: 17px;
+
+        border-radius: 16px;
+    }
+
+
     .messages {
-        padding:
-            30px
-            16px
-            150px;
+        padding-top: 26px;
+
+        padding-right:
+            calc(
+                14px
+                + var(--safe-right)
+            );
+
+        padding-bottom:
+            calc(
+                125px
+                + var(--safe-bottom)
+            );
+
+        padding-left:
+            calc(
+                14px
+                + var(--safe-left)
+            );
+    }
+
+
+    .message {
+        margin-bottom: 22px;
+    }
+
+
+    .message-content {
+        max-width: 92%;
+
+        font-size: 14.5px;
     }
 
 
     .composer-wrapper {
-        bottom: 12px;
+        bottom:
+            calc(
+                10px
+                + var(--safe-bottom)
+            );
 
         width:
-            calc(100% - 20px);
+            calc(
+                100%
+                - 20px
+                - var(--safe-left)
+                - var(--safe-right)
+            );
+    }
+
+
+    .composer {
+        gap: 5px;
+
+        padding:
+            8px
+            8px
+            8px
+            14px;
     }
 
 
@@ -499,8 +947,125 @@ button {
     }
 
 
-    .message-content {
-        max-width: 92%;
+    .icon-button,
+    .send-button {
+        width: 40px;
+        height: 40px;
+
+        flex-basis: 40px;
+    }
+
+
+    .voice-waveform-live {
+        left: 18px;
+        right: 96px;
+
+        height: 30px;
+    }
+
+
+    .voice-waveform-canvas {
+        height: 30px;
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE LANDSCAPE
+   ========================================================= */
+
+
+@media (
+    max-width: 700px
+) and (
+    orientation: landscape
+) {
+
+    .topbar {
+        min-height: 52px;
+    }
+
+
+    .welcome {
+        top: 34%;
+    }
+
+
+    .welcome-logo {
+        width: 46px;
+        height: 46px;
+
+        margin-bottom: 10px;
+    }
+
+
+    .welcome p {
+        margin-top: 5px;
+    }
+
+
+    .messages {
+        padding-top: 18px;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+
+@media (max-width: 360px) {
+
+    .brand-mark {
+        width: 32px;
+        height: 32px;
+
+        flex-basis: 32px;
+    }
+
+
+    .composer {
+        padding-left: 12px;
+    }
+
+
+    .icon-button,
+    .send-button {
+        width: 38px;
+        height: 38px;
+
+        flex-basis: 38px;
+    }
+
+
+    .voice-waveform-live {
+        left: 16px;
+        right: 90px;
+    }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+
+@media (
+    prefers-reduced-motion:
+    reduce
+) {
+
+    .voice-waveform-live {
+        transition: none;
+    }
+
+
+    .icon-button.recording {
+        animation: none;
     }
 
 }
