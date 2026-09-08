@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>{{ app_name }}</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/style.css') }}"
+    >
+</head>
+
+<body>
+
+<div class="app">
+
+    <header class="topbar">
+
+        <div class="brand">
+            <div class="brand-mark">
+                S
+            </div>
+
+            <div class="brand-text">
+                <span class="brand-name">
+                    SD.OS
+                </span>
+
+                <span class="brand-version">
+                    v{{ app_version }}
+                </span>
+            </div>
+        </div>
+
+
+        <div class="status">
+            <span class="status-dot"></span>
+            <span>Online</span>
+        </div>
+
+    </header>
+
+
+    <main class="chat">
+
+        <section
+            id="welcome"
+            class="welcome"
+        >
+
+            <div class="welcome-logo">
+                SD
+            </div>
+
+            <h1>
+                SD.OS
+            </h1>
+
+            <p>
+                Чем я могу вам помочь?
+            </p>
+
+        </section>
+
+
+        <section
+            id="messages"
+            class="messages"
+        ></section>
+
+
+        <div class="composer-wrapper">
+
+            <form
+                id="chat-form"
+                class="composer"
+            >
+
+                <textarea
+                    id="message-input"
+                    placeholder="Спросите о работе компании..."
+                    rows="1"
+                    maxlength="10000"
+                    autocomplete="off"
+                ></textarea>
+
+
+                <button
+                    type="button"
+                    id="voice-button"
+                    class="icon-button"
+                    aria-label="Голосовой ввод"
+                    title="Голосовой ввод"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21H8v2h8v-2h-3v-3.08A7 7 0 0 0 19 11h-2Z"
+                        />
+                    </svg>
+                </button>
+
+
+                <button
+                    type="submit"
+                    id="send-button"
+                    class="send-button"
+                    aria-label="Отправить"
+                >
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M3 20.5 21 12 3 3.5v6.6l12 1.9-12 1.9v6.6Z"
+                        />
+                    </svg>
+                </button>
+
+            </form>
+
+
+            <div class="composer-hint">
+                SD.OS может ошибаться. Важные решения требуют проверки.
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<script
+    src="{{ url_for('static', path='/js/app.js') }}"
+></script>
+
+</body>
+</html>
