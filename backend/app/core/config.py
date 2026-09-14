@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
+
 from dotenv import load_dotenv
+
 
 BASE_DIR = Path(__file__).resolve().parents[3]
 
@@ -33,6 +35,26 @@ class Settings:
     WHISPER_COMPUTE_TYPE = os.getenv(
         "WHISPER_COMPUTE_TYPE",
         "int8",
+    )
+
+    SIM_CARD_TRACKER_API_URL = os.getenv(
+        "SIM_CARD_TRACKER_API_URL",
+        "http://127.0.0.1:8001",
+    ).rstrip("/")
+
+    SIM_CARD_TRACKER_API_TOKEN = os.getenv(
+        "SIM_CARD_TRACKER_API_TOKEN",
+        "",
+    )
+
+    OPENAI_API_KEY = os.getenv(
+        "OPENAI_API_KEY",
+        "",
+    )
+
+    OPENAI_MODEL = os.getenv(
+        "OPENAI_MODEL",
+        "gpt-5.6-luna",
     )
 
 

@@ -431,6 +431,98 @@ button {
 
 
 /* =========================================================
+   MESSAGE ACTIONS
+   ========================================================= */
+
+
+.message-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    width: 100%;
+
+    gap: 8px;
+
+    margin-top: 12px;
+}
+
+
+.message-action-row {
+    display: block;
+
+    width: 100%;
+}
+
+
+.message-action-button {
+    display: inline-flex;
+    align-items: center;
+
+    max-width: 100%;
+
+    padding:
+        2px
+        0;
+
+    border: 0;
+
+    background:
+        transparent;
+
+    color:
+        var(--text-primary);
+
+    font: inherit;
+    font-size: 15px;
+    line-height: 1.5;
+
+    text-align: left;
+
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+
+    cursor: pointer;
+
+    white-space: normal;
+
+    overflow-wrap: anywhere;
+
+    -webkit-tap-highlight-color:
+        transparent;
+
+    transition:
+        color 120ms ease,
+        opacity 120ms ease;
+}
+
+
+.message-action-button:visited {
+    color:
+        var(--text-primary);
+}
+
+
+.message-action-button:hover {
+    background:
+        transparent;
+
+    color:
+        var(--text-secondary);
+
+    opacity: 0.9;
+}
+
+
+.message-action-button:active {
+    opacity: 0.65;
+
+    transform: none;
+}
+
+
+/* =========================================================
    COMPOSER
    ========================================================= */
 
@@ -540,13 +632,6 @@ button {
 }
 
 
-/*
- * При записи textarea остаётся
- * физически на том же месте.
- *
- * Поэтому composer не меняет
- * размеры ни на один пиксель.
- */
 #message-input.voice-input-hidden {
     color: transparent;
 
@@ -678,12 +763,6 @@ button {
    ========================================================= */
 
 
-/*
- * Waveform лежит поверх textarea.
- *
- * Она не участвует во flex-layout,
- * поэтому форма ввода не становится выше.
- */
 .voice-waveform-live {
     position: absolute;
 
@@ -827,6 +906,17 @@ button {
             var(--accent);
     }
 
+
+    .message-action-button:hover {
+        background:
+            transparent;
+
+        color:
+            var(--text-primary);
+
+        opacity: 1;
+    }
+
 }
 
 
@@ -911,6 +1001,27 @@ button {
         max-width: 92%;
 
         font-size: 14.5px;
+    }
+
+
+    .message-actions {
+        gap: 8px;
+
+        margin-top: 11px;
+    }
+
+
+    .message-action-button {
+        font-size: 14.5px;
+
+        /*
+         * Невидимая вертикальная зона
+         * делает ссылку удобнее для
+         * нажатия пальцем.
+         */
+        padding:
+            5px
+            0;
     }
 
 
@@ -1066,6 +1177,11 @@ button {
 
     .icon-button.recording {
         animation: none;
+    }
+
+
+    .message-action-button {
+        transition: none;
     }
 
 }

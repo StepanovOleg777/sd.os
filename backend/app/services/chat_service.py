@@ -1,16 +1,43 @@
+from dataclasses import dataclass
+from typing import Any
+
+from backend.app.services.openai_service import (
+    openai_service,
+)
+
+
+@dataclass
+class ChatServiceResult:
+    answer: str
+    action: dict[str, Any] | None = None
+
+
 class ChatService:
-    async def process_message(self, message: str) -> str:
-        """
-        Точка входа в обработку пользовательского сообщения.
+    async def process_message(
+        self,
+        message: str,
+    ) -> ChatServiceResult:
 
-        Позже здесь будет вызов Supervisor,
-        который определит необходимого агента
-        и соберёт финальный ответ руководителю.
-        """
+        message = message.strip()
 
-        return (
-            "Интерфейс SD.OS работает. "
-            "Главный ИИ пока не подключён."
+        try:
+            answer, action = (
+                await openai_service.process(
+                    message
+                )
+            )
+
+        except Exception as exc:
+            return ChatServiceResult(
+                answer=(
+                    "Ошибка обращения к ИИ: "
+                    f"{exc}"
+                ),
+            )
+
+        return ChatServiceResult(
+            answer=answer,
+            action=action,
         )
 
 

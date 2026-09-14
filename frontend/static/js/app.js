@@ -100,53 +100,21 @@ const MAX_RECORDING_DURATION =
 // Waveform settings
 // =========================================================
 
-/*
- * Количество точек линии.
- *
- * Меньше = линия плавнее.
- * Больше = детальнее.
- */
 const WAVEFORM_POINTS = 90;
 
-
-/*
- * Насколько сильно голос
- * визуально увеличивает волну.
- */
 const WAVEFORM_GAIN = 2.35;
 
-
-/*
- * Временное сглаживание.
- *
- * 0 = мгновенная реакция.
- * 1 = очень медленно.
- *
- * 0.38 даёт хороший компромисс:
- * линия реагирует быстро,
- * но не дрожит.
- */
 const TEMPORAL_SMOOTHING = 0.38;
 
-
-/*
- * Сглаживание соседних точек.
- */
 const SPATIAL_SMOOTHING = 2;
 
 
-/*
- * Предыдущий кадр waveform.
- */
 let previousWaveform =
     new Array(
         WAVEFORM_POINTS
     ).fill(0);
 
 
-/*
- * Текущая визуальная громкость.
- */
 let visualLevel = 0;
 
 
@@ -186,6 +154,298 @@ function addMessage(role, text) {
 
 
     return wrapper;
+}
+
+
+function createActionLink(
+    label,
+    href
+) {
+    const button =
+        document.createElement("a");
+
+    button.className =
+        "message-action-button";
+
+    button.href =
+        href;
+
+    button.textContent =
+        label;
+
+    return button;
+}
+
+
+function createActionButton(
+    label
+) {
+    const button =
+        document.createElement("button");
+
+    button.type =
+        "button";
+
+    button.className =
+        "message-action-button";
+
+    button.textContent =
+        label;
+
+    return button;
+}
+
+
+function addDirectAction(
+    messageElement,
+    action
+) {
+    if (
+        !action
+        ||
+        !action.href
+    ) {
+        return;
+    }
+
+
+    const content =
+        messageElement.querySelector(
+            ".message-content"
+        );
+
+
+    if (!content) {
+        return;
+    }
+
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "message-actions";
+
+
+    const defaultLabel =
+        action.type === "email"
+            ? "Написать письмо"
+            : "Позвонить";
+
+
+    const button =
+        createActionLink(
+            action.label
+            || defaultLabel,
+            action.href
+        );
+
+
+    actions.appendChild(
+        button
+    );
+
+
+    content.appendChild(
+        actions
+    );
+
+
+    scrollMessagesToBottom();
+}
+
+
+function addChoiceButtons(
+    messageElement,
+    action
+) {
+    if (
+        !action
+        ||
+        !Array.isArray(
+            action.choices
+        )
+        ||
+        action.choices.length === 0
+    ) {
+        return;
+    }
+
+
+    const content =
+        messageElement.querySelector(
+            ".message-content"
+        );
+
+
+    if (!content) {
+        return;
+    }
+
+
+    const actions =
+        document.createElement("div");
+
+    actions.className =
+        "message-actions";
+
+
+    action.choices.forEach(
+        choice => {
+
+            const row =
+                document.createElement(
+                    "div"
+                );
+
+            row.className =
+                "message-action-row";
+
+
+            if (
+                action.type
+                === "choose_phone"
+            ) {
+                if (!choice.href) {
+                    return;
+                }
+
+
+                const button =
+                    createActionLink(
+                        choice.label
+                        || choice.value,
+                        choice.href
+                    );
+
+
+                row.appendChild(
+                    button
+                );
+
+
+                actions.appendChild(
+                    row
+                );
+
+
+                return;
+            }
+
+
+            if (
+                action.type
+                === "choose_person"
+            ) {
+                if (!choice.value) {
+                    return;
+                }
+
+
+                const button =
+                    createActionButton(
+                        choice.label
+                        || choice.value
+                    );
+
+
+                button.addEventListener(
+                    "click",
+                    async () => {
+
+                        if (
+                            action.intent
+                            === "email"
+                        ) {
+                            await sendMessage(
+                                `Напиши ${choice.value}`
+                            );
+
+                            return;
+                        }
+
+
+                        await sendMessage(
+                            `Позвони ${choice.value}`
+                        );
+                    }
+                );
+
+
+                row.appendChild(
+                    button
+                );
+
+
+                actions.appendChild(
+                    row
+                );
+            }
+
+        }
+    );
+
+
+    if (
+        actions.children.length === 0
+    ) {
+        return;
+    }
+
+
+    content.appendChild(
+        actions
+    );
+
+
+    scrollMessagesToBottom();
+}
+
+
+function renderAssistantResponse(
+    data
+) {
+    const assistantMessage =
+        addMessage(
+            "assistant",
+            data.answer
+            || ""
+        );
+
+
+    if (!data.action) {
+        return;
+    }
+
+
+    if (
+        data.action.type
+        === "call"
+        ||
+        data.action.type
+        === "email"
+    ) {
+        addDirectAction(
+            assistantMessage,
+            data.action
+        );
+
+        return;
+    }
+
+
+    if (
+        data.action.type
+        === "choose_person"
+        ||
+        data.action.type
+        === "choose_phone"
+    ) {
+        addChoiceButtons(
+            assistantMessage,
+            data.action
+        );
+    }
 }
 
 
@@ -293,9 +553,8 @@ async function sendMessage(message) {
         typingMessage.remove();
 
 
-        addMessage(
-            "assistant",
-            data.answer
+        renderAssistantResponse(
+            data
         );
 
     } catch (error) {
@@ -366,12 +625,6 @@ function getFileExtension(
 // =========================================================
 
 function showWaveform() {
-    /*
-     * textarea остаётся в layout.
-     *
-     * Именно поэтому composer
-     * не изменяет размеры.
-     */
     input.classList.add(
         "voice-input-hidden"
     );
@@ -711,10 +964,6 @@ function drawWaveform(
     }
 
 
-    // -----------------------------------------------------
-    // Громкость
-    // -----------------------------------------------------
-
     const rms =
         calculateRms(
             dataArray
@@ -727,13 +976,6 @@ function drawWaveform(
         );
 
 
-    /*
-     * Ниже этого значения считаем
-     * сигнал визуальной тишиной.
-     *
-     * Это НЕ влияет на автоматическую
-     * остановку записи.
-     */
     const visualNoiseFloor =
         0.008;
 
@@ -756,10 +998,6 @@ function drawWaveform(
     }
 
 
-    /*
-     * На подъём реагируем быстрее,
-     * на спад немного плавнее.
-     */
     if (
         targetLevel >
         visualLevel
@@ -777,21 +1015,12 @@ function drawWaveform(
     }
 
 
-    /*
-     * Если действительно тихо —
-     * постепенно возвращаем линию
-     * в идеальный центр.
-     */
     if (
         visualLevel < 0.025
     ) {
         visualLevel = 0;
     }
 
-
-    // -----------------------------------------------------
-    // Получаем форму сигнала
-    // -----------------------------------------------------
 
     const rawPoints =
         new Array(
@@ -809,13 +1038,6 @@ function drawWaveform(
         );
 
 
-    /*
-     * Нормализуем форму текущей волны
-     * относительно её пика.
-     *
-     * Благодаря этому тихая речь
-     * тоже визуально заметна.
-     */
     const normalization =
         peak > 0.001
             ? 1 / peak
@@ -842,10 +1064,6 @@ function drawWaveform(
             * normalization;
 
 
-        /*
-         * Ограничиваем редкие
-         * слишком резкие пики.
-         */
         value =
             Math.max(
                 -1,
@@ -861,20 +1079,12 @@ function drawWaveform(
     }
 
 
-    /*
-     * Сглаживаем соседние точки,
-     * чтобы линия не была зубчатой.
-     */
     const spatialPoints =
         smoothWaveformPoints(
             rawPoints,
             SPATIAL_SMOOTHING
         );
 
-
-    // -----------------------------------------------------
-    // Temporal smoothing
-    // -----------------------------------------------------
 
     const currentWaveform =
         new Array(
@@ -908,10 +1118,6 @@ function drawWaveform(
     previousWaveform =
         currentWaveform;
 
-
-    // -----------------------------------------------------
-    // Draw
-    // -----------------------------------------------------
 
     waveformContext.clearRect(
         0,
@@ -947,11 +1153,6 @@ function drawWaveform(
         * WAVEFORM_GAIN;
 
 
-    /*
-     * Ограничиваем амплитуду,
-     * чтобы линия не упиралась
-     * в края canvas.
-     */
     const safeAmplitude =
         Math.min(
             maxAmplitude,
@@ -962,12 +1163,6 @@ function drawWaveform(
     waveformContext.beginPath();
 
 
-    /*
-     * Рисуем кривую через midpoint.
-     *
-     * Получается значительно мягче
-     * обычных lineTo между точками.
-     */
     const points = [];
 
 
@@ -984,10 +1179,6 @@ function drawWaveform(
             );
 
 
-        /*
-         * Уменьшаем амплитуду
-         * возле краёв линии.
-         */
         const edge =
             Math.sin(
                 Math.PI * progress
@@ -1328,10 +1519,6 @@ function startAudioAnalysis() {
             .createAnalyser();
 
 
-    /*
-     * Хороший баланс между
-     * отзывчивостью и детализацией.
-     */
     analyser.fftSize =
         2048;
 
@@ -1384,18 +1571,11 @@ function startAudioAnalysis() {
         );
 
 
-        /*
-         * Рисуем живую waveform.
-         */
         drawWaveform(
             dataArray
         );
 
 
-        /*
-         * Определяем громкость
-         * отдельно от визуализации.
-         */
         const rms =
             calculateRms(
                 dataArray
@@ -1419,10 +1599,6 @@ function startAudioAnalysis() {
         }
 
 
-        /*
-         * Пользователь говорил,
-         * затем молчит 1.8 сек.
-         */
         if (
             heardSpeech
             &&
@@ -1435,9 +1611,6 @@ function startAudioAnalysis() {
         }
 
 
-        /*
-         * Максимум 30 секунд.
-         */
         if (
             now - recordingStartedAt
             >= MAX_RECORDING_DURATION

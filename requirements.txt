@@ -4,3 +4,5 @@ jinja2
 python-multipart
 python-dotenv
 faster-whisper==1.2.1
+httpx
+openai
