@@ -13,6 +13,7 @@ env/
 
 # PyCharm
 .idea/
+.python-version
 
 # OS
 .DS_Store

@@ -10,6 +10,22 @@
 
     <title>{{ app_name }}</title>
 
+    <!--
+        Применяем сохранённую тему до отрисовки страницы,
+        чтобы при открытии не было вспышки тёмной/светлой темы.
+    -->
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem("sdos-theme");
+
+            if (savedTheme === "light" || savedTheme === "dark") {
+                document.documentElement.dataset.theme = savedTheme;
+            } else {
+                document.documentElement.dataset.theme = "dark";
+            }
+        })();
+    </script>
+
     <link
         rel="stylesheet"
         href="{{ url_for('static', path='/css/style.css') }}"
@@ -23,11 +39,16 @@
     <header class="topbar">
 
         <div class="brand">
+
             <div class="brand-mark">
-                S
+                <img
+                    src="/static/img/stroydvor.png"
+                    alt="СтройДвор"
+                >
             </div>
 
             <div class="brand-text">
+
                 <span class="brand-name">
                     SD.OS
                 </span>
@@ -35,13 +56,34 @@
                 <span class="brand-version">
                     v{{ app_version }}
                 </span>
+
             </div>
+
         </div>
 
 
-        <div class="status">
-            <span class="status-dot"></span>
-            <span>Online</span>
+        <div class="topbar-actions">
+
+            <button
+                type="button"
+                id="theme-toggle"
+                class="theme-toggle"
+                aria-label="Сменить тему"
+                title="Сменить тему"
+            >
+                <span
+                    id="theme-icon"
+                    class="theme-icon"
+                    aria-hidden="true"
+                ></span>
+            </button>
+
+
+            <div class="status">
+                <span class="status-dot"></span>
+                <span>Online</span>
+            </div>
+
         </div>
 
     </header>
@@ -55,16 +97,15 @@
         >
 
             <div class="welcome-logo">
-                SD
+                <img
+                    src="/static/img/stroydvor.png"
+                    alt="СтройДвор"
+                >
             </div>
 
             <h1>
-                SD.OS
+                Цифровое ядро компании
             </h1>
-
-            <p>
-                Чем я могу вам помочь?
-            </p>
 
         </section>
 
@@ -142,6 +183,52 @@
 <script
     src="{{ url_for('static', path='/js/app.js') }}"
 ></script>
+
+
+<script>
+    (() => {
+        const toggle = document.getElementById("theme-toggle");
+        const icon = document.getElementById("theme-icon");
+
+        function updateThemeIcon() {
+            const theme =
+                document.documentElement.dataset.theme || "dark";
+
+            /*
+                В тёмной теме показываем солнце:
+                нажатием пользователь перейдёт в светлую.
+
+                В светлой показываем луну:
+                нажатием вернётся в тёмную.
+            */
+            icon.textContent =
+                theme === "dark"
+                    ? "☀"
+                    : "☾";
+        }
+
+        updateThemeIcon();
+
+        toggle.addEventListener("click", () => {
+            const currentTheme =
+                document.documentElement.dataset.theme || "dark";
+
+            const nextTheme =
+                currentTheme === "dark"
+                    ? "light"
+                    : "dark";
+
+            document.documentElement.dataset.theme = nextTheme;
+
+            localStorage.setItem(
+                "sdos-theme",
+                nextTheme
+            );
+
+            updateThemeIcon();
+        });
+    })();
+</script>
 
 </body>
 </html>

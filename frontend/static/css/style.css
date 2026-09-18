@@ -16,6 +16,9 @@
 
     --recording: #d75f68;
 
+    --composer-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.25);
+
     --radius-small: 10px;
     --radius-medium: 16px;
     --radius-large: 22px;
@@ -27,6 +30,39 @@
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     --safe-left: env(safe-area-inset-left, 0px);
 }
+
+
+/* =========================================================
+   LIGHT THEME
+   ========================================================= */
+
+
+html[data-theme="light"] {
+    --bg-primary: #f7f8fa;
+    --bg-secondary: #ffffff;
+    --bg-elevated: #eceef2;
+
+    --border: #dfe1e6;
+
+    --text-primary: #18191c;
+    --text-secondary: #64676d;
+    --text-muted: #9a9da3;
+
+    --accent: #6267ea;
+    --accent-hover: #555ad8;
+
+    --user-message: #eceef2;
+
+    --recording: #c8525c;
+
+    --composer-shadow:
+        0 12px 35px rgba(0, 0, 0, 0.08);
+}
+
+
+/* =========================================================
+   BASE
+   ========================================================= */
 
 
 * {
@@ -68,6 +104,10 @@ body {
 
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+
+    transition:
+        background 180ms ease,
+        color 180ms ease;
 }
 
 
@@ -98,6 +138,11 @@ button {
     height: 100dvh;
 
     min-height: 0;
+
+    background: var(--bg-primary);
+
+    transition:
+        background 180ms ease;
 }
 
 
@@ -119,11 +164,18 @@ button {
         0
         calc(28px + var(--safe-left));
 
-    border-bottom: 1px solid var(--border);
+    border-bottom:
+        1px solid
+        var(--border);
 
-    background: var(--bg-primary);
+    background:
+        var(--bg-primary);
 
     flex-shrink: 0;
+
+    transition:
+        background 180ms ease,
+        border-color 180ms ease;
 }
 
 
@@ -147,12 +199,18 @@ button {
     align-items: center;
     justify-content: center;
 
-    border-radius: 10px;
+    background: transparent;
+    border: 0;
+}
 
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
 
-    font-weight: 600;
+.brand-mark img {
+    width: 50px;
+    height: 50px;
+
+    display: block;
+
+    object-fit: contain;
 }
 
 
@@ -175,10 +233,83 @@ button {
 
 
 .brand-version {
-    color: var(--text-muted);
+    color:
+        var(--text-muted);
 
     font-size: 11px;
 }
+
+
+/* =========================================================
+   TOPBAR ACTIONS
+   ========================================================= */
+
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+
+    flex-shrink: 0;
+
+    gap: 14px;
+}
+
+
+.theme-toggle {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 34px;
+
+    padding: 0;
+
+    border-radius: 50%;
+
+    background: transparent;
+    color: var(--text-secondary);
+
+    cursor: pointer;
+
+    transition:
+        background 120ms ease,
+        color 120ms ease,
+        transform 120ms ease;
+}
+
+
+.theme-toggle:hover {
+    background:
+        var(--bg-elevated);
+
+    color:
+        var(--text-primary);
+}
+
+
+.theme-toggle:active {
+    transform:
+        scale(0.94);
+}
+
+
+.theme-icon {
+    display: block;
+
+    font-size: 18px;
+    line-height: 1;
+
+    transform:
+        translateY(-1px);
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
 
 
 .status {
@@ -189,7 +320,8 @@ button {
 
     gap: 8px;
 
-    color: var(--text-secondary);
+    color:
+        var(--text-secondary);
 
     font-size: 12px;
 }
@@ -235,16 +367,18 @@ button {
     top: 42%;
     left: 50%;
 
-    transform: translate(-50%, -50%);
+    transform:
+        translate(-50%, -50%);
 
     display: flex;
     flex-direction: column;
     align-items: center;
 
-    width: min(
-        calc(100% - 32px),
-        700px
-    );
+    width:
+        min(
+            calc(100% - 32px),
+            700px
+        );
 
     padding: 20px;
 
@@ -270,29 +404,32 @@ button {
 
 
 .welcome-logo {
-    width: 62px;
-    height: 62px;
+    width: 110px;
+    height: 110px;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
     margin-bottom: 20px;
+}
 
-    border-radius: 18px;
 
-    background: var(--bg-elevated);
-    border: 1px solid var(--border);
+.welcome-logo img {
+    width: 110px;
+    height: 110px;
 
-    font-size: 18px;
-    font-weight: 600;
+    display: block;
 
-    letter-spacing: 0.06em;
+    object-fit: contain;
 }
 
 
 .welcome h1 {
     margin: 0;
+
+    color:
+        var(--text-primary);
 
     font-size:
         clamp(
@@ -313,7 +450,8 @@ button {
         0
         0;
 
-    color: var(--text-secondary);
+    color:
+        var(--text-secondary);
 
     font-size:
         clamp(
@@ -350,6 +488,7 @@ button {
         );
 
     scrollbar-width: thin;
+
     scrollbar-color:
         var(--border)
         transparent;
@@ -362,7 +501,8 @@ button {
 
 
 .messages::-webkit-scrollbar-thumb {
-    background: var(--border);
+    background:
+        var(--border);
 
     border-radius: 10px;
 }
@@ -370,7 +510,8 @@ button {
 
 .message {
     width: 100%;
-    max-width: var(--content-width);
+    max-width:
+        var(--content-width);
 
     margin:
         0
@@ -392,10 +533,14 @@ button {
 
 
 .message-content {
-    max-width: min(
-        720px,
-        85%
-    );
+    max-width:
+        min(
+            720px,
+            85%
+        );
+
+    color:
+        var(--text-primary);
 
     font-size: 15px;
     line-height: 1.65;
@@ -411,15 +556,22 @@ button {
         12px
         16px;
 
-    background: var(--user-message);
+    background:
+        var(--user-message);
 
-    border: 1px solid var(--border);
+    border:
+        1px solid
+        var(--border);
 
     border-radius:
         var(--radius-medium)
         var(--radius-medium)
         4px
         var(--radius-medium);
+
+    transition:
+        background 180ms ease,
+        border-color 180ms ease;
 }
 
 
@@ -579,8 +731,12 @@ button {
         var(--bg-secondary);
 
     box-shadow:
-        0 12px 35px
-        rgba(0, 0, 0, 0.25);
+        var(--composer-shadow);
+
+    transition:
+        background 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
 }
 
 
@@ -607,7 +763,8 @@ button {
     border: 0;
     outline: none;
 
-    background: transparent;
+    background:
+        transparent;
 
     color:
         var(--text-primary);
@@ -678,7 +835,8 @@ button {
 
 
 .icon-button {
-    background: transparent;
+    background:
+        transparent;
 
     color:
         var(--text-secondary);
@@ -878,6 +1036,15 @@ button {
 
 @media (hover: none) {
 
+    .theme-toggle:hover {
+        background:
+            transparent;
+
+        color:
+            var(--text-secondary);
+    }
+
+
     .icon-button:hover {
         background:
             transparent;
@@ -949,6 +1116,24 @@ button {
     }
 
 
+    .topbar-actions {
+        gap: 8px;
+    }
+
+
+    .theme-toggle {
+        width: 32px;
+        height: 32px;
+
+        flex-basis: 32px;
+    }
+
+
+    .theme-icon {
+        font-size: 17px;
+    }
+
+
     .status span:last-child {
         display: none;
     }
@@ -960,12 +1145,16 @@ button {
 
 
     .welcome-logo {
-        width: 56px;
-        height: 56px;
+        width: 90px;
+        height: 90px;
 
         margin-bottom: 17px;
+    }
 
-        border-radius: 16px;
+
+    .welcome-logo img {
+        width: 90px;
+        height: 90px;
     }
 
 
@@ -1014,11 +1203,6 @@ button {
     .message-action-button {
         font-size: 14.5px;
 
-        /*
-         * Невидимая вертикальная зона
-         * делает ссылку удобнее для
-         * нажатия пальцем.
-         */
         padding:
             5px
             0;
@@ -1104,10 +1288,16 @@ button {
 
 
     .welcome-logo {
-        width: 46px;
-        height: 46px;
+        width: 70px;
+        height: 70px;
 
         margin-bottom: 10px;
+    }
+
+
+    .welcome-logo img {
+        width: 70px;
+        height: 70px;
     }
 
 
@@ -1135,6 +1325,12 @@ button {
         height: 32px;
 
         flex-basis: 32px;
+    }
+
+
+    .brand-mark img {
+        width: 44px;
+        height: 44px;
     }
 
 
@@ -1169,6 +1365,15 @@ button {
     prefers-reduced-motion:
     reduce
 ) {
+
+    body,
+    .app,
+    .topbar,
+    .composer,
+    .message.user .message-content {
+        transition: none;
+    }
+
 
     .voice-waveform-live {
         transition: none;
