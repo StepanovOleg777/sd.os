@@ -7,3 +7,8 @@ faster-whisper==1.2.1
 httpx
 openai
 rapidfuzz
+sqlalchemy
+asyncpg
+alembic
+pwdlib[argon2]
+aiosmtplib

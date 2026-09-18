@@ -57,5 +57,10 @@ class Settings:
         "gpt-5.6-luna",
     )
 
+    DATABASE_URL = os.getenv(
+        "DATABASE_URL",
+        "",
+    )
+
 
 settings = Settings()
