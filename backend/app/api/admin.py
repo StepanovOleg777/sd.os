@@ -577,6 +577,9 @@ async def user_edit(
                 user_role
             )
 
+        # Сначала реально удаляем старые связи ролей из БД.
+        await db.flush()
+
         for role in selected_roles:
             db.add(
                 UserRole(

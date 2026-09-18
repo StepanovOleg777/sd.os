@@ -38,6 +38,9 @@ from backend.app.models.role import (
     Role,
     UserRole,
 )
+from backend.app.api.invite import (
+    router as invite_router,
+)
 from backend.app.models.user import User
 
 
@@ -61,21 +64,11 @@ templates = Jinja2Templates(
 )
 
 
-app.include_router(
-    chat_router
-)
-
-app.include_router(
-    voice_router
-)
-
-app.include_router(
-    auth_router
-)
-
-app.include_router(
-    admin_router
-)
+app.include_router(chat_router)
+app.include_router(voice_router)
+app.include_router(auth_router)
+app.include_router(admin_router)
+app.include_router(invite_router)
 
 
 @app.get(
