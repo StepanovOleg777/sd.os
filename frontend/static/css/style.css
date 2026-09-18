@@ -308,6 +308,89 @@ button {
 
 
 /* =========================================================
+   USER / LOGOUT
+   ========================================================= */
+
+
+.current-user {
+    max-width: 220px;
+
+    color:
+        var(--text-secondary);
+
+    font-size: 12px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+
+.logout-button {
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding:
+        0
+        11px;
+
+    border-radius:
+        var(--radius-small);
+
+    background:
+        transparent;
+
+    color:
+        var(--text-secondary);
+
+    cursor: pointer;
+
+    transition:
+        background 120ms ease,
+        color 120ms ease,
+        opacity 120ms ease,
+        transform 120ms ease;
+}
+
+
+.logout-button:hover {
+    background:
+        var(--bg-elevated);
+
+    color:
+        var(--text-primary);
+}
+
+
+.logout-button:active {
+    transform:
+        scale(0.96);
+}
+
+
+.logout-button:disabled {
+    opacity: 0.4;
+
+    cursor: default;
+}
+
+
+.logout-button svg {
+    width: 17px;
+    height: 17px;
+
+    flex-shrink: 0;
+
+    fill:
+        currentColor;
+}
+
+
+/* =========================================================
    STATUS
    ========================================================= */
 

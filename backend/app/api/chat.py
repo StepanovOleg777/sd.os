@@ -1,8 +1,10 @@
 from typing import Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from backend.app.core.auth import get_current_user
+from backend.app.models.user import User
 from backend.app.services.chat_service import (
     chat_service,
 )
@@ -61,11 +63,10 @@ class ChatResponse(BaseModel):
 )
 async def send_message(
     payload: ChatRequest,
+    user: User = Depends(get_current_user),
 ) -> ChatResponse:
-    result = (
-        await chat_service.process_message(
-            payload.message
-        )
+    result = await chat_service.process_message(
+        payload.message
     )
 
     return ChatResponse(

@@ -1,9 +1,17 @@
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    UploadFile,
+)
 from pydantic import BaseModel
 
+from backend.app.core.auth import get_current_user
+from backend.app.models.user import User
 from backend.app.services.speech_to_text_service import (
     speech_to_text_service,
 )
@@ -40,6 +48,7 @@ MAX_AUDIO_SIZE = 25 * 1024 * 1024
 )
 async def transcribe_audio(
     audio: UploadFile = File(...),
+    user: User = Depends(get_current_user),
 ) -> TranscriptionResponse:
 
     content_type = (
@@ -53,7 +62,10 @@ async def transcribe_audio(
     ):
         raise HTTPException(
             status_code=415,
-            detail=f"Неподдерживаемый формат аудио: {audio.content_type}",
+            detail=(
+                "Неподдерживаемый формат аудио: "
+                f"{audio.content_type}"
+            ),
         )
 
     audio_data = await audio.read()
@@ -82,16 +94,22 @@ async def transcribe_audio(
             delete=False,
         ) as temp_file:
             temp_file.write(audio_data)
-            temp_path = Path(temp_file.name)
+            temp_path = Path(
+                temp_file.name
+            )
 
-        text = speech_to_text_service.transcribe(
-            temp_path
+        text = (
+            speech_to_text_service.transcribe(
+                temp_path
+            )
         )
 
         if not text:
             raise HTTPException(
                 status_code=422,
-                detail="Не удалось распознать речь.",
+                detail=(
+                    "Не удалось распознать речь."
+                ),
             )
 
         return TranscriptionResponse(

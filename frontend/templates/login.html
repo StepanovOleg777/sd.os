@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Вход — SD.OS</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-family: Arial, sans-serif;
+
+            background: #111;
+            color: #fff;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 380px;
+
+            padding: 32px;
+
+            border: 1px solid #333;
+            border-radius: 14px;
+
+            background: #181818;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 24px;
+
+            text-align: center;
+        }
+
+        .field {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+
+            border: 1px solid #444;
+            border-radius: 8px;
+
+            background: #222;
+            color: #fff;
+
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+
+            border: 0;
+            border-radius: 8px;
+
+            background: #fff;
+            color: #111;
+
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .error {
+            margin-top: 14px;
+
+            color: #ff7777;
+            text-align: center;
+
+            min-height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-box">
+
+    <h1>SD.OS</h1>
+
+    <form id="login-form">
+
+        <div class="field">
+            <label for="username">
+                Логин
+            </label>
+
+            <input
+                id="username"
+                name="username"
+                type="text"
+                autocomplete="username"
+                required
+            >
+        </div>
+
+        <div class="field">
+            <label for="password">
+                Пароль
+            </label>
+
+            <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                required
+            >
+        </div>
+
+        <button type="submit">
+            Войти
+        </button>
+
+        <div
+            id="error"
+            class="error"
+        ></div>
+
+    </form>
+
+</div>
+
+<script>
+    const form = document.getElementById("login-form");
+    const errorBox = document.getElementById("error");
+
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        errorBox.textContent = "";
+
+        const username = document
+            .getElementById("username")
+            .value
+            .trim();
+
+        const password = document
+            .getElementById("password")
+            .value;
+
+        try {
+            const response = await fetch(
+                "/api/auth/login",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+
+                    body: JSON.stringify({
+                        username: username,
+                        password: password,
+                    }),
+                }
+            );
+
+            if (!response.ok) {
+                const data = await response.json();
+
+                errorBox.textContent =
+                    data.detail || "Ошибка входа.";
+
+                return;
+            }
+
+            window.location.href = "/";
+
+        } catch (error) {
+            errorBox.textContent =
+                "Не удалось подключиться к серверу.";
+        }
+    });
+</script>
+
+</body>
+</html>

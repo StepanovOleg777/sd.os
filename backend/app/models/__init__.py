@@ -3,6 +3,7 @@ from backend.app.models.role import (
     Role,
     UserRole,
 )
+from backend.app.models.session import Session
 from backend.app.models.user import User
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "Role",
     "UserRole",
     "Invite",
+    "Session",
 ]

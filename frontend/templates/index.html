@@ -10,10 +10,6 @@
 
     <title>{{ app_name }}</title>
 
-    <!--
-        Применяем сохранённую тему до отрисовки страницы,
-        чтобы при открытии не было вспышки тёмной/светлой темы.
-    -->
     <script>
         (() => {
             const savedTheme = localStorage.getItem("sdos-theme");
@@ -64,6 +60,14 @@
 
         <div class="topbar-actions">
 
+            <div
+                class="current-user"
+                title="{{ user.fio }}"
+            >
+                {{ user.fio }}
+            </div>
+
+
             <button
                 type="button"
                 id="theme-toggle"
@@ -83,6 +87,28 @@
                 <span class="status-dot"></span>
                 <span>Online</span>
             </div>
+
+
+            <button
+                type="button"
+                id="logout-button"
+                class="logout-button"
+                aria-label="Выйти"
+                title="Выйти из SD.OS"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M10 17v-2h4V9h-4V7l-5 5 5 5Zm1-14h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-8v-2h8V5h-8V3Z"
+                    />
+                </svg>
+
+                <span>
+                    Выйти
+                </span>
+            </button>
 
         </div>
 
@@ -194,13 +220,6 @@
             const theme =
                 document.documentElement.dataset.theme || "dark";
 
-            /*
-                В тёмной теме показываем солнце:
-                нажатием пользователь перейдёт в светлую.
-
-                В светлой показываем луну:
-                нажатием вернётся в тёмную.
-            */
             icon.textContent =
                 theme === "dark"
                     ? "☀"
@@ -227,6 +246,38 @@
 
             updateThemeIcon();
         });
+    })();
+
+
+    (() => {
+        const logoutButton =
+            document.getElementById("logout-button");
+
+        logoutButton.addEventListener(
+            "click",
+            async () => {
+                logoutButton.disabled = true;
+
+                try {
+                    const response = await fetch(
+                        "/api/auth/logout",
+                        {
+                            method: "POST",
+                        }
+                    );
+
+                    if (!response.ok) {
+                        logoutButton.disabled = false;
+                        return;
+                    }
+
+                    window.location.href = "/login";
+
+                } catch (error) {
+                    logoutButton.disabled = false;
+                }
+            }
+        );
     })();
 </script>
 
