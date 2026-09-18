@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Новый пользователь — SD.OS</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+
+            font-family:
+                Inter,
+                Arial,
+                sans-serif;
+
+            background: #111214;
+            color: #f2f2f2;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .back {
+            display: inline-block;
+
+            margin-bottom: 24px;
+
+            color: #96999f;
+            text-decoration: none;
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #96999f;
+        }
+
+        input[type="text"],
+        input[type="email"] {
+            width: 100%;
+
+            padding: 12px 14px;
+
+            border: 1px solid #2b2d31;
+            border-radius: 10px;
+
+            background: #17181b;
+            color: #f2f2f2;
+
+            font-size: 15px;
+
+            box-sizing: border-box;
+        }
+
+        .roles {
+            padding: 15px;
+
+            border: 1px solid #2b2d31;
+            border-radius: 10px;
+
+            background: #17181b;
+        }
+
+        .role {
+            display: flex;
+            align-items: center;
+
+            gap: 10px;
+
+            margin-bottom: 10px;
+
+            color: #f2f2f2;
+        }
+
+        .role:last-child {
+            margin-bottom: 0;
+        }
+
+        button {
+            width: 100%;
+
+            margin-top: 10px;
+
+            padding: 13px;
+
+            border: 0;
+            border-radius: 10px;
+
+            background: #7277ff;
+            color: white;
+
+            font-size: 15px;
+
+            cursor: pointer;
+        }
+
+        .error {
+            margin-bottom: 20px;
+
+            padding: 12px;
+
+            border-radius: 8px;
+
+            background: #3a2024;
+            color: #ff9aa0;
+        }
+
+        .success {
+            margin-bottom: 25px;
+
+            padding: 18px;
+
+            border: 1px solid #2b5b3d;
+            border-radius: 10px;
+
+            background: #17271d;
+        }
+
+        .invite-url {
+            width: 100%;
+
+            margin-top: 12px;
+
+            padding: 10px;
+
+            border: 1px solid #345d42;
+            border-radius: 8px;
+
+            background: #111914;
+            color: #d8f2df;
+
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a
+        class="back"
+        href="/admin/users"
+    >
+        ← Пользователи
+    </a>
+
+    <h1>
+        Новый пользователь
+    </h1>
+
+
+    {% if error %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    {% if invite_url %}
+
+        <div class="success">
+
+            <strong>
+                Пользователь создан.
+            </strong>
+
+            <p>
+                Ссылка приглашения действует 24 часа.
+            </p>
+
+            <input
+                class="invite-url"
+                value="{{ invite_url }}"
+                readonly
+                onclick="this.select()"
+            >
+
+        </div>
+
+    {% endif %}
+
+
+    <form
+        method="post"
+        action="/admin/users/new"
+    >
+
+        <div class="field">
+
+            <label for="fio">
+                ФИО
+            </label>
+
+            <input
+                id="fio"
+                name="fio"
+                type="text"
+                required
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label for="email">
+                Email
+            </label>
+
+            <input
+                id="email"
+                name="email"
+                type="email"
+                required
+            >
+
+        </div>
+
+
+        <div class="field">
+
+            <label>
+                Роли
+            </label>
+
+            <div class="roles">
+
+                {% for role in roles %}
+
+                    <label class="role">
+
+                        <input
+                            type="checkbox"
+                            name="roles"
+                            value="{{ role.code }}"
+                        >
+
+                        <span>
+                            {{ role.name }}
+                        </span>
+
+                    </label>
+
+                {% endfor %}
+
+            </div>
+
+        </div>
+
+
+        <button type="submit">
+            Создать пользователя
+        </button>
+
+    </form>
+
+</div>
+
+</body>
+</html>

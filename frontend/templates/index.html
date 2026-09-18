@@ -67,6 +67,18 @@
                 {{ user.fio }}
             </div>
 
+            {% if can_access_admin %}
+
+                <a
+                    href="/admin/users"
+                    class="admin-button"
+                    title="Администрирование SD.OS"
+                >
+                    Админка
+                </a>
+
+            {% endif %}
+
 
             <button
                 type="button"
