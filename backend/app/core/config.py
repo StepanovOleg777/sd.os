@@ -62,5 +62,57 @@ class Settings:
         "",
     )
 
+    SMTP_HOST = os.getenv(
+        "SMTP_HOST",
+        "",
+    )
+
+    SMTP_PORT = int(
+        os.getenv(
+            "SMTP_PORT",
+            "465",
+        )
+    )
+
+    SMTP_USERNAME = os.getenv(
+        "SMTP_USERNAME",
+        "",
+    )
+
+    SMTP_PASSWORD = os.getenv(
+        "SMTP_PASSWORD",
+        "",
+    )
+
+    SMTP_FROM_EMAIL = os.getenv(
+        "SMTP_FROM_EMAIL",
+        "",
+    )
+
+    SMTP_FROM_NAME = os.getenv(
+        "SMTP_FROM_NAME",
+        "SD.OS",
+    )
+
+    SMTP_USE_SSL = (
+        os.getenv(
+            "SMTP_USE_SSL",
+            "true",
+        ).lower()
+        == "true"
+    )
+
+    APP_BASE_URL = os.getenv(
+        "APP_BASE_URL",
+        "http://127.0.0.1:8000",
+    ).rstrip("/")
+
+    PASSWORD_RESET_TTL_MINUTES = int(
+        os.getenv(
+            "PASSWORD_RESET_TTL_MINUTES",
+            "30",
+        )
+    )
+
 
 settings = Settings()

@@ -5,6 +5,7 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
+from backend.app.models.password_reset_token import PasswordResetToken
 from backend.app.core.config import settings
 from backend.app.core.database import Base
 import backend.app.models

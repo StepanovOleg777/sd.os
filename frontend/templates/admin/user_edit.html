@@ -33,13 +33,11 @@
         .container {
             width: 100%;
             max-width: 620px;
-
             margin: 0 auto;
         }
 
         .back {
             display: inline-block;
-
             margin-bottom: 24px;
 
             color: #96999f;
@@ -47,11 +45,7 @@
         }
 
         h1 {
-            margin:
-                0
-                0
-                28px;
-
+            margin: 0 0 28px;
             font-size: 26px;
         }
 
@@ -65,7 +59,6 @@
             margin-bottom: 7px;
 
             color: #96999f;
-
             font-size: 13px;
         }
 
@@ -124,7 +117,8 @@
             line-height: 1.5;
         }
 
-        .error {
+        .error,
+        .action-error {
             margin-bottom: 20px;
 
             padding: 12px 14px;
@@ -133,6 +127,22 @@
 
             background: #3a2024;
             color: #ff9aa0;
+
+            line-height: 1.5;
+        }
+
+        .action-success {
+            margin-bottom: 20px;
+
+            padding: 12px 14px;
+
+            border: 1px solid #2b5b3d;
+            border-radius: 9px;
+
+            background: #17271d;
+            color: #d7efdf;
+
+            line-height: 1.5;
         }
 
         .save-button {
@@ -151,6 +161,100 @@
             font-size: 15px;
 
             cursor: pointer;
+        }
+
+        .save-button:hover {
+            background: #8186ff;
+        }
+
+        .invite-actions {
+            margin-top: 30px;
+            padding-top: 26px;
+
+            border-top: 1px solid #2b2d31;
+        }
+
+        .invite-actions h2 {
+            margin: 0 0 8px;
+            font-size: 18px;
+        }
+
+        .invite-actions-note {
+            margin: 0 0 18px;
+
+            color: #96999f;
+
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .resend-button,
+        .cancel-button,
+        .copy-button {
+            width: 100%;
+
+            padding: 12px;
+
+            border-radius: 9px;
+
+            font-size: 14px;
+
+            cursor: pointer;
+        }
+
+        .resend-button {
+            border: 1px solid #4b4e55;
+
+            background: #1e2024;
+            color: #f2f2f2;
+        }
+
+        .resend-button:hover {
+            background: #292b30;
+        }
+
+        .cancel-button {
+            margin-top: 12px;
+
+            border: 1px solid #6c3036;
+
+            background: #2c191c;
+            color: #ff9aa0;
+        }
+
+        .cancel-button:hover {
+            background: #3a2024;
+        }
+
+        .fallback-box {
+            margin-top: 14px;
+        }
+
+        .fallback-link {
+            width: 100%;
+
+            padding: 11px 12px;
+
+            border: 1px solid #4b4e55;
+            border-radius: 8px;
+
+            background: #111214;
+            color: #f2f2f2;
+
+            font-size: 13px;
+        }
+
+        .copy-button {
+            margin-top: 10px;
+
+            border: 1px solid #4b4e55;
+
+            background: #1e2024;
+            color: #f2f2f2;
+        }
+
+        .copy-button:hover {
+            background: #292b30;
         }
     </style>
 </head>
@@ -176,6 +280,50 @@
 
         <div class="error">
             {{ error }}
+        </div>
+
+    {% endif %}
+
+
+    {% if action_success %}
+
+        <div class="action-success">
+            {{ action_success }}
+        </div>
+
+    {% endif %}
+
+
+    {% if action_error %}
+
+        <div class="action-error">
+
+            {{ action_error }}
+
+            {% if invite_url %}
+
+                <div class="fallback-box">
+
+                    <input
+                        id="invite-link"
+                        class="fallback-link"
+                        type="text"
+                        value="{{ invite_url }}"
+                        readonly
+                    >
+
+                    <button
+                        type="button"
+                        class="copy-button"
+                        onclick="copyInviteLink()"
+                    >
+                        Скопировать ссылку приглашения
+                    </button>
+
+                </div>
+
+            {% endif %}
+
         </div>
 
     {% endif %}
@@ -285,54 +433,70 @@
                 Статус
             </label>
 
-            <select
-                id="account-status"
-                name="account_status"
-            >
 
-                <option
-                    value="active"
-                    {% if edited_user.status == "active" %}
-                        selected
-                    {% endif %}
+            {% if edited_user.status == "invited" %}
+
+                <input
+                    class="readonly"
+                    type="text"
+                    value="Приглашён"
+                    readonly
                 >
-                    Активен
-                </option>
 
-                <option
+                <input
+                    type="hidden"
+                    name="account_status"
                     value="invited"
-                    {% if edited_user.status == "invited" %}
-                        selected
-                    {% endif %}
                 >
-                    Приглашён
-                </option>
 
-                <option
-                    value="disabled"
-                    {% if edited_user.status == "disabled" %}
-                        selected
-                    {% endif %}
+                <div class="status-note">
+                    Статус изменится автоматически после
+                    активации приглашения пользователем.
+                </div>
+
+            {% else %}
+
+                <select
+                    id="account-status"
+                    name="account_status"
                 >
-                    Отключён
-                </option>
 
-                <option
-                    value="dismissed"
-                    {% if edited_user.status == "dismissed" %}
-                        selected
-                    {% endif %}
-                >
-                    Уволен
-                </option>
+                    <option
+                        value="active"
+                        {% if edited_user.status == "active" %}
+                            selected
+                        {% endif %}
+                    >
+                        Активен
+                    </option>
 
-            </select>
+                    <option
+                        value="disabled"
+                        {% if edited_user.status == "disabled" %}
+                            selected
+                        {% endif %}
+                    >
+                        Отключён
+                    </option>
 
-            <div class="status-note">
-                «Отключён» — временно запрещает доступ к SD.OS.
-                «Уволен» — отключает доступ и переносит пользователя
-                в раздел «Архив».
-            </div>
+                    <option
+                        value="dismissed"
+                        {% if edited_user.status == "dismissed" %}
+                            selected
+                        {% endif %}
+                    >
+                        Уволен
+                    </option>
+
+                </select>
+
+                <div class="status-note">
+                    «Отключён» — временно запрещает доступ к SD.OS.
+                    «Уволен» — отключает доступ и переносит пользователя
+                    в раздел «Архив».
+                </div>
+
+            {% endif %}
 
         </div>
 
@@ -346,7 +510,97 @@
 
     </form>
 
+
+    {% if edited_user.status == "invited"
+          and not edited_user.username %}
+
+        <div class="invite-actions">
+
+            <h2>
+                Приглашение
+            </h2>
+
+            <p class="invite-actions-note">
+                Можно отправить пользователю новую ссылку
+                или полностью отменить приглашение.
+            </p>
+
+
+            <form
+                method="post"
+                action="/admin/users/{{ edited_user.id }}/resend-invite"
+            >
+
+                <button
+                    type="submit"
+                    class="resend-button"
+                >
+                    Отправить приглашение повторно
+                </button>
+
+            </form>
+
+
+            <form
+                method="post"
+                action="/admin/users/{{ edited_user.id }}/cancel-invite"
+                onsubmit="
+                    return confirm(
+                        'Отменить приглашение и полностью удалить '
+                        + 'эту неактивированную учётную запись?'
+                    );
+                "
+            >
+
+                <button
+                    type="submit"
+                    class="cancel-button"
+                >
+                    Отменить приглашение
+                </button>
+
+            </form>
+
+        </div>
+
+    {% endif %}
+
 </div>
+
+
+<script>
+    async function copyInviteLink() {
+        const input =
+            document.getElementById(
+                "invite-link"
+            );
+
+        if (!input) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(
+                input.value
+            );
+
+            alert(
+                "Ссылка скопирована."
+            );
+
+        } catch (error) {
+            input.select();
+
+            document.execCommand(
+                "copy"
+            );
+
+            alert(
+                "Ссылка скопирована."
+            );
+        }
+    }
+</script>
 
 </body>
 </html>

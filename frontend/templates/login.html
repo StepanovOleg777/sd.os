@@ -2,7 +2,10 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     <title>Вход — SD.OS</title>
 
@@ -80,6 +83,23 @@
             cursor: pointer;
         }
 
+        .forgot-link {
+            display: block;
+
+            margin-top: 14px;
+
+            color: #aaa;
+
+            text-align: center;
+            text-decoration: none;
+
+            font-size: 14px;
+        }
+
+        .forgot-link:hover {
+            color: #fff;
+        }
+
         .error {
             margin-top: 14px;
 
@@ -95,11 +115,14 @@
 
 <div class="login-box">
 
-    <h1>SD.OS</h1>
+    <h1>
+        SD.OS
+    </h1>
 
     <form id="login-form">
 
         <div class="field">
+
             <label for="username">
                 Логин
             </label>
@@ -111,9 +134,12 @@
                 autocomplete="username"
                 required
             >
+
         </div>
 
+
         <div class="field">
+
             <label for="password">
                 Пароль
             </label>
@@ -125,11 +151,22 @@
                 autocomplete="current-password"
                 required
             >
+
         </div>
+
 
         <button type="submit">
             Войти
         </button>
+
+
+        <a
+            class="forgot-link"
+            href="/forgot-password"
+        >
+            Забыли пароль?
+        </a>
+
 
         <div
             id="error"
@@ -140,57 +177,78 @@
 
 </div>
 
+
 <script>
-    const form = document.getElementById("login-form");
-    const errorBox = document.getElementById("error");
+    const form =
+        document.getElementById(
+            "login-form"
+        );
 
-    form.addEventListener("submit", async (event) => {
-        event.preventDefault();
+    const errorBox =
+        document.getElementById(
+            "error"
+        );
 
-        errorBox.textContent = "";
+    form.addEventListener(
+        "submit",
+        async (event) => {
+            event.preventDefault();
 
-        const username = document
-            .getElementById("username")
-            .value
-            .trim();
+            errorBox.textContent = "";
 
-        const password = document
-            .getElementById("password")
-            .value;
+            const username =
+                document
+                    .getElementById(
+                        "username"
+                    )
+                    .value
+                    .trim();
 
-        try {
-            const response = await fetch(
-                "/api/auth/login",
-                {
-                    method: "POST",
+            const password =
+                document
+                    .getElementById(
+                        "password"
+                    )
+                    .value;
 
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
+            try {
+                const response = await fetch(
+                    "/api/auth/login",
+                    {
+                        method: "POST",
 
-                    body: JSON.stringify({
-                        username: username,
-                        password: password,
-                    }),
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                        },
+
+                        body: JSON.stringify({
+                            username: username,
+                            password: password,
+                        }),
+                    }
+                );
+
+                if (!response.ok) {
+                    const data =
+                        await response.json();
+
+                    errorBox.textContent =
+                        data.detail
+                        || "Ошибка входа.";
+
+                    return;
                 }
-            );
 
-            if (!response.ok) {
-                const data = await response.json();
+                window.location.href = "/";
 
+            } catch (error) {
                 errorBox.textContent =
-                    data.detail || "Ошибка входа.";
-
-                return;
+                    "Не удалось подключиться "
+                    + "к серверу.";
             }
-
-            window.location.href = "/";
-
-        } catch (error) {
-            errorBox.textContent =
-                "Не удалось подключиться к серверу.";
         }
-    });
+    );
 </script>
 
 </body>

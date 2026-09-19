@@ -29,10 +29,23 @@ class AuthService:
         username: str,
         password: str,
     ) -> tuple[User, str]:
+
+        normalized_username = (
+            username
+            .strip()
+            .lower()
+        )
+
+        if not normalized_username:
+            raise AuthError(
+                "Неверный логин или пароль."
+            )
+
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(User).where(
-                    User.username == username
+                    User.username
+                    == normalized_username
                 )
             )
 
@@ -66,7 +79,9 @@ class AuthService:
                     "Неверный логин или пароль."
                 )
 
-            raw_token = generate_invite_token()
+            raw_token = (
+                generate_invite_token()
+            )
 
             token_hash = hash_token(
                 raw_token
@@ -91,7 +106,9 @@ class AuthService:
 
             user.last_login = now
 
-            db.add(session)
+            db.add(
+                session
+            )
 
             await db.commit()
 

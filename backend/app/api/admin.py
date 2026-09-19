@@ -6,16 +6,40 @@ from fastapi import (
     Request,
     status,
 )
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import (
+    HTMLResponse,
+    RedirectResponse,
+)
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
+from sqlalchemy import (
+    delete,
+    select,
+)
 
-from backend.app.core.config import TEMPLATES_DIR
-from backend.app.core.database import AsyncSessionLocal
-from backend.app.core.permissions import require_admin
-from backend.app.models.role import Role, UserRole
+from backend.app.core.config import (
+    TEMPLATES_DIR,
+    settings,
+)
+from backend.app.core.database import (
+    AsyncSessionLocal,
+)
+from backend.app.core.permissions import (
+    require_admin,
+)
+from backend.app.models.invite import Invite
+from backend.app.models.role import (
+    Role,
+    UserRole,
+)
+from backend.app.models.session import Session
 from backend.app.models.user import User
-from backend.app.services.invite_service import invite_service
+from backend.app.services.email_service import (
+    EmailServiceError,
+    email_service,
+)
+from backend.app.services.invite_service import (
+    invite_service,
+)
 
 
 router = APIRouter(
@@ -139,7 +163,9 @@ async def get_users_data(
 async def users_page(
     request: Request,
     view: str = "active",
-    admin: User = Depends(require_admin),
+    admin: User = Depends(
+        require_admin
+    ),
 ):
     if view not in USER_VIEWS:
         view = "active"
@@ -167,7 +193,9 @@ async def users_page(
 )
 async def user_create_page(
     request: Request,
-    admin: User = Depends(require_admin),
+    admin: User = Depends(
+        require_admin
+    ),
 ):
     async with AsyncSessionLocal() as db:
         roles = await get_all_roles(
@@ -182,6 +210,9 @@ async def user_create_page(
             "roles": roles,
             "error": None,
             "invite_url": None,
+            "created_user": None,
+            "email_sent": False,
+            "email_error": None,
         },
     )
 
@@ -196,7 +227,9 @@ async def user_create(
     fio: str = Form(...),
     email: str = Form(...),
     roles: list[str] = Form(...),
-    admin: User = Depends(require_admin),
+    admin: User = Depends(
+        require_admin
+    ),
 ):
     fio = fio.strip()
     email = email.strip().lower()
@@ -215,6 +248,9 @@ async def user_create(
                     "roles": all_roles,
                     "error": "Укажите ФИО.",
                     "invite_url": None,
+                    "created_user": None,
+                    "email_sent": False,
+                    "email_error": None,
                 },
                 status_code=400,
             )
@@ -228,6 +264,9 @@ async def user_create(
                     "roles": all_roles,
                     "error": "Укажите email.",
                     "invite_url": None,
+                    "created_user": None,
+                    "email_sent": False,
+                    "email_error": None,
                 },
                 status_code=400,
             )
@@ -238,10 +277,11 @@ async def user_create(
             )
         )
 
-        if (
+        existing_user = (
             existing_result.scalar_one_or_none()
-            is not None
-        ):
+        )
+
+        if existing_user is not None:
             return templates.TemplateResponse(
                 request=request,
                 name="admin/user_create.html",
@@ -253,6 +293,9 @@ async def user_create(
                         "email уже существует."
                     ),
                     "invite_url": None,
+                    "created_user": None,
+                    "email_sent": False,
+                    "email_error": None,
                 },
                 status_code=400,
             )
@@ -278,6 +321,9 @@ async def user_create(
                         "Выберите хотя бы одну роль."
                     ),
                     "invite_url": None,
+                    "created_user": None,
+                    "email_sent": False,
+                    "email_error": None,
                 },
                 status_code=400,
             )
@@ -313,9 +359,27 @@ async def user_create(
         await db.commit()
 
         invite_url = (
-            f"{str(request.base_url).rstrip('/')}"
+            f"{settings.APP_BASE_URL}"
             f"/invite/{raw_token}"
         )
+
+        email_sent = False
+        email_error = None
+
+        try:
+            await email_service.send_invitation(
+                to_email=user.email,
+                fio=user.fio,
+                invite_url=invite_url,
+            )
+
+            email_sent = True
+
+        except EmailServiceError:
+            email_error = (
+                "Пользователь создан, "
+                "но письмо отправить не удалось."
+            )
 
     return templates.TemplateResponse(
         request=request,
@@ -327,6 +391,8 @@ async def user_create(
             "invite_url": invite_url,
             "created_user": user,
             "invite": invite,
+            "email_sent": email_sent,
+            "email_error": email_error,
         },
     )
 
@@ -339,7 +405,9 @@ async def user_create(
 async def user_edit_page(
     request: Request,
     user_id: int,
-    admin: User = Depends(require_admin),
+    admin: User = Depends(
+        require_admin
+    ),
 ):
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -352,7 +420,9 @@ async def user_edit_page(
 
         if user is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=(
+                    status.HTTP_404_NOT_FOUND
+                ),
                 detail="Пользователь не найден.",
             )
 
@@ -374,8 +444,13 @@ async def user_edit_page(
             "admin": admin,
             "edited_user": user,
             "roles": roles,
-            "selected_role_ids": selected_role_ids,
+            "selected_role_ids": (
+                selected_role_ids
+            ),
             "error": None,
+            "action_success": None,
+            "action_error": None,
+            "invite_url": None,
         },
     )
 
@@ -392,17 +467,12 @@ async def user_edit(
     email: str = Form(...),
     roles: list[str] = Form(...),
     account_status: str = Form(...),
-    admin: User = Depends(require_admin),
+    admin: User = Depends(
+        require_admin
+    ),
 ):
     fio = fio.strip()
     email = email.strip().lower()
-
-    allowed_statuses = {
-        "invited",
-        "active",
-        "disabled",
-        "dismissed",
-    }
 
     async with AsyncSessionLocal() as db:
         result = await db.execute(
@@ -415,7 +485,9 @@ async def user_edit(
 
         if user is None:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
+                status_code=(
+                    status.HTTP_404_NOT_FOUND
+                ),
                 detail="Пользователь не найден.",
             )
 
@@ -438,17 +510,42 @@ async def user_edit(
                     "admin": admin,
                     "edited_user": user,
                     "roles": all_roles,
-                    "selected_role_ids": selected_role_ids,
-                    "error": "Заполните ФИО и email.",
+                    "selected_role_ids": (
+                        selected_role_ids
+                    ),
+                    "error": (
+                        "Заполните ФИО и email."
+                    ),
+                    "action_success": None,
+                    "action_error": None,
+                    "invite_url": None,
                 },
                 status_code=400,
             )
 
-        if account_status not in allowed_statuses:
-            raise HTTPException(
-                status_code=400,
-                detail="Недопустимый статус.",
-            )
+        if user.status == "invited":
+            if account_status != "invited":
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Статус приглашённого "
+                        "пользователя изменяется "
+                        "автоматически после активации."
+                    ),
+                )
+
+        else:
+            allowed_statuses = {
+                "active",
+                "disabled",
+                "dismissed",
+            }
+
+            if account_status not in allowed_statuses:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Недопустимый статус.",
+                )
 
         if (
             user.id == admin.id
@@ -472,12 +569,17 @@ async def user_edit(
                     "admin": admin,
                     "edited_user": user,
                     "roles": all_roles,
-                    "selected_role_ids": selected_role_ids,
+                    "selected_role_ids": (
+                        selected_role_ids
+                    ),
                     "error": (
                         "Нельзя отключить или "
                         "архивировать собственную "
                         "учётную запись."
                     ),
+                    "action_success": None,
+                    "action_error": None,
+                    "invite_url": None,
                 },
                 status_code=400,
             )
@@ -489,10 +591,11 @@ async def user_edit(
             )
         )
 
-        if (
+        duplicate_user = (
             duplicate_result.scalar_one_or_none()
-            is not None
-        ):
+        )
+
+        if duplicate_user is not None:
             selected_role_ids = (
                 await get_user_role_ids(
                     db,
@@ -507,11 +610,16 @@ async def user_edit(
                     "admin": admin,
                     "edited_user": user,
                     "roles": all_roles,
-                    "selected_role_ids": selected_role_ids,
+                    "selected_role_ids": (
+                        selected_role_ids
+                    ),
                     "error": (
                         "Этот email уже используется "
                         "другим пользователем."
                     ),
+                    "action_success": None,
+                    "action_error": None,
+                    "invite_url": None,
                 },
                 status_code=400,
             )
@@ -541,21 +649,28 @@ async def user_edit(
                     "admin": admin,
                     "edited_user": user,
                     "roles": all_roles,
-                    "selected_role_ids": selected_role_ids,
+                    "selected_role_ids": (
+                        selected_role_ids
+                    ),
                     "error": (
                         "У пользователя должна быть "
                         "хотя бы одна роль."
                     ),
+                    "action_success": None,
+                    "action_error": None,
+                    "invite_url": None,
                 },
                 status_code=400,
             )
 
         user.fio = fio
         user.email = email
-        user.status = account_status
+
+        if user.status != "invited":
+            user.status = account_status
 
         user.is_active = (
-            account_status
+            user.status
             in {
                 "active",
                 "invited",
@@ -568,7 +683,7 @@ async def user_edit(
             )
         )
 
-        current_roles = (
+        current_roles = list(
             current_roles_result.scalars().all()
         )
 
@@ -577,7 +692,6 @@ async def user_edit(
                 user_role
             )
 
-        # Сначала реально удаляем старые связи ролей из БД.
         await db.flush()
 
         for role in selected_roles:
@@ -595,3 +709,214 @@ async def user_edit(
         status_code=303,
     )
 
+
+@router.post(
+    "/users/{user_id}/resend-invite",
+    response_class=HTMLResponse,
+    include_in_schema=False,
+)
+async def resend_invite(
+    request: Request,
+    user_id: int,
+    admin: User = Depends(
+        require_admin
+    ),
+):
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(User).where(
+                User.id == user_id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_404_NOT_FOUND
+                ),
+                detail="Пользователь не найден.",
+            )
+
+        if user.status != "invited":
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Повторное приглашение можно "
+                    "отправить только пользователю "
+                    "со статусом «Приглашён»."
+                ),
+            )
+
+        if user.username is not None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Учётная запись уже была "
+                    "активирована."
+                ),
+            )
+
+        await db.execute(
+            delete(Invite).where(
+                Invite.user_id == user.id
+            )
+        )
+
+        invite, raw_token = (
+            await invite_service.create_invite(
+                db=db,
+                user_id=user.id,
+            )
+        )
+
+        await db.commit()
+
+        invite_url = (
+            f"{settings.APP_BASE_URL}"
+            f"/invite/{raw_token}"
+        )
+
+        email_sent = False
+
+        try:
+            await email_service.send_invitation(
+                to_email=user.email,
+                fio=user.fio,
+                invite_url=invite_url,
+            )
+
+            email_sent = True
+
+        except EmailServiceError:
+            email_sent = False
+
+        roles = await get_all_roles(
+            db
+        )
+
+        selected_role_ids = (
+            await get_user_role_ids(
+                db,
+                user.id,
+            )
+        )
+
+    if email_sent:
+        action_success = (
+            "Новое приглашение отправлено на "
+            f"{user.email}."
+        )
+        action_error = None
+        fallback_invite_url = None
+
+    else:
+        action_success = None
+        action_error = (
+            "Новое приглашение создано, "
+            "но письмо отправить не удалось."
+        )
+        fallback_invite_url = invite_url
+
+    return templates.TemplateResponse(
+        request=request,
+        name="admin/user_edit.html",
+        context={
+            "admin": admin,
+            "edited_user": user,
+            "roles": roles,
+            "selected_role_ids": (
+                selected_role_ids
+            ),
+            "error": None,
+            "action_success": action_success,
+            "action_error": action_error,
+            "invite_url": fallback_invite_url,
+        },
+    )
+
+
+@router.post(
+    "/users/{user_id}/cancel-invite",
+    include_in_schema=False,
+)
+async def cancel_invite(
+    user_id: int,
+    admin: User = Depends(
+        require_admin
+    ),
+):
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(User).where(
+                User.id == user_id
+            )
+        )
+
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            raise HTTPException(
+                status_code=(
+                    status.HTTP_404_NOT_FOUND
+                ),
+                detail="Пользователь не найден.",
+            )
+
+        if user.status != "invited":
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Отменить можно только "
+                    "неактивированное приглашение."
+                ),
+            )
+
+        if user.username is not None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Учётная запись уже была "
+                    "активирована и не может быть "
+                    "удалена как приглашение."
+                ),
+            )
+
+        if user.id == admin.id:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "Нельзя удалить собственную "
+                    "учётную запись."
+                ),
+            )
+
+        await db.execute(
+            delete(Session).where(
+                Session.user_id == user.id
+            )
+        )
+
+        await db.execute(
+            delete(Invite).where(
+                Invite.user_id == user.id
+            )
+        )
+
+        await db.execute(
+            delete(UserRole).where(
+                UserRole.user_id == user.id
+            )
+        )
+
+        await db.delete(
+            user
+        )
+
+        await db.commit()
+
+    return RedirectResponse(
+        url="/admin/users?view=invited",
+        status_code=303,
+    )

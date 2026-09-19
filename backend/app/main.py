@@ -20,6 +20,12 @@ from backend.app.api.auth import (
 from backend.app.api.chat import (
     router as chat_router,
 )
+from backend.app.api.invite import (
+    router as invite_router,
+)
+from backend.app.api.password_reset import (
+    router as password_reset_router,
+)
 from backend.app.api.voice import (
     router as voice_router,
 )
@@ -37,9 +43,6 @@ from backend.app.core.database import (
 from backend.app.models.role import (
     Role,
     UserRole,
-)
-from backend.app.api.invite import (
-    router as invite_router,
 )
 from backend.app.models.user import User
 
@@ -69,6 +72,7 @@ app.include_router(voice_router)
 app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(invite_router)
+app.include_router(password_reset_router)
 
 
 @app.get(
