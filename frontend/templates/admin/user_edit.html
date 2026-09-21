@@ -80,6 +80,11 @@
             font-size: 15px;
         }
 
+        input:focus,
+        select:focus {
+            border-color: #7277ff;
+        }
+
         .readonly {
             color: #65686e;
         }
@@ -108,7 +113,16 @@
             margin-bottom: 0;
         }
 
-        .status-note {
+        .department-field {
+            display: none;
+        }
+
+        .department-field.visible {
+            display: block;
+        }
+
+        .status-note,
+        .field-note {
             margin-top: 8px;
 
             color: #65686e;
@@ -403,6 +417,7 @@
                     <label class="role">
 
                         <input
+                            class="role-checkbox"
                             type="checkbox"
                             name="roles"
                             value="{{ role.code }}"
@@ -419,6 +434,53 @@
 
                 {% endfor %}
 
+            </div>
+
+        </div>
+
+
+        <div
+            id="department-field"
+            class="field department-field"
+        >
+
+            <label
+                class="field-label"
+                for="department-id"
+            >
+                Отдел
+            </label>
+
+            <select
+                id="department-id"
+                name="department_id"
+            >
+
+                <option value="">
+                    Выберите отдел
+                </option>
+
+                {% for department in departments %}
+
+                    <option
+                        value="{{ department.id }}"
+                        {% if edited_user.department_id == department.id %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ department.name }}
+                        {% if not department.is_active %}
+                            — отключён
+                        {% endif %}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+            <div class="field-note">
+                Отдел обязателен для сотрудника
+                и руководителя отдела.
             </div>
 
         </div>
@@ -569,6 +631,79 @@
 
 
 <script>
+    function updateDepartmentVisibility() {
+        const roleCheckboxes =
+            document.querySelectorAll(
+                ".role-checkbox"
+            );
+
+        const departmentField =
+            document.getElementById(
+                "department-field"
+            );
+
+        const departmentSelect =
+            document.getElementById(
+                "department-id"
+            );
+
+        if (
+            !departmentField
+            || !departmentSelect
+        ) {
+            return;
+        }
+
+        let departmentRequired = false;
+
+        roleCheckboxes.forEach(
+            (checkbox) => {
+                if (
+                    checkbox.checked
+                    && (
+                        checkbox.value === "employee"
+                        || checkbox.value === "department_head"
+                    )
+                ) {
+                    departmentRequired = true;
+                }
+            }
+        );
+
+        if (departmentRequired) {
+            departmentField.classList.add(
+                "visible"
+            );
+
+            departmentSelect.required = true;
+
+        } else {
+            departmentField.classList.remove(
+                "visible"
+            );
+
+            departmentSelect.required = false;
+        }
+    }
+
+
+    document
+        .querySelectorAll(
+            ".role-checkbox"
+        )
+        .forEach(
+            (checkbox) => {
+                checkbox.addEventListener(
+                    "change",
+                    updateDepartmentVisibility
+                );
+            }
+        );
+
+
+    updateDepartmentVisibility();
+
+
     async function copyInviteLink() {
         const input =
             document.getElementById(

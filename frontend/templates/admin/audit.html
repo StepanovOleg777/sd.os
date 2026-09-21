@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Журнал аудита — SD.OS</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px;
+
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background: #111214;
+            color: #f2f2f2;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1500px;
+
+            margin: 0 auto;
+        }
+
+        .back {
+            display: inline-block;
+
+            margin-bottom: 24px;
+
+            color: #96999f;
+            text-decoration: none;
+        }
+
+        .header {
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            margin: 0;
+
+            font-size: 26px;
+            font-weight: 600;
+        }
+
+        .filters {
+            display: flex;
+            align-items: flex-end;
+            flex-wrap: wrap;
+
+            gap: 10px;
+
+            margin-bottom: 18px;
+
+            padding: 16px;
+
+            border: 1px solid #2b2d31;
+            border-radius: 12px;
+
+            background: #17181b;
+        }
+
+        .filter-field {
+            min-width: 210px;
+            flex: 1;
+        }
+
+        .filter-label {
+            display: block;
+
+            margin-bottom: 7px;
+
+            color: #96999f;
+
+            font-size: 12px;
+        }
+
+        .filter-input,
+        .filter-select {
+            width: 100%;
+
+            padding: 10px 12px;
+
+            border: 1px solid #2b2d31;
+            border-radius: 8px;
+
+            outline: none;
+
+            background: #111214;
+            color: #f2f2f2;
+
+            font-size: 13px;
+        }
+
+        .filter-input:focus,
+        .filter-select:focus {
+            border-color: #7277ff;
+        }
+
+        .filter-button,
+        .reset-button {
+            min-height: 38px;
+
+            padding: 0 14px;
+
+            border-radius: 8px;
+
+            font-size: 13px;
+
+            cursor: pointer;
+        }
+
+        .filter-button {
+            border: 0;
+
+            background: #7277ff;
+            color: #ffffff;
+        }
+
+        .filter-button:hover {
+            background: #8186ff;
+        }
+
+        .reset-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            border: 1px solid #3a3d43;
+
+            background: #1b1d21;
+            color: #c7c9ce;
+
+            text-decoration: none;
+        }
+
+        .reset-button:hover {
+            background: #24262b;
+            color: #ffffff;
+        }
+
+        .summary {
+            margin-bottom: 12px;
+
+            color: #65686e;
+
+            font-size: 12px;
+        }
+
+        .audit-list {
+            width: 100%;
+
+            border: 1px solid #2b2d31;
+            border-radius: 12px;
+
+            overflow: hidden;
+
+            background: #17181b;
+        }
+
+        .audit-row {
+            display: grid;
+
+            grid-template-columns:
+                165px
+                minmax(180px, 1.2fr)
+                minmax(220px, 1.3fr)
+                minmax(250px, 1.5fr)
+                minmax(250px, 1.5fr)
+                130px;
+
+            align-items: start;
+
+            gap: 18px;
+
+            padding: 15px 16px;
+
+            border-bottom: 1px solid #2b2d31;
+        }
+
+        .audit-row:last-child {
+            border-bottom: 0;
+        }
+
+        .audit-header {
+            min-height: 42px;
+
+            align-items: center;
+
+            padding-top: 0;
+            padding-bottom: 0;
+
+            background: #141518;
+            color: #65686e;
+
+            font-size: 11px;
+            font-weight: 600;
+
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .cell {
+            min-width: 0;
+
+            color: #96999f;
+
+            font-size: 12px;
+            line-height: 1.6;
+
+            overflow-wrap: anywhere;
+        }
+
+        .primary {
+            color: #f2f2f2;
+        }
+
+        .user-id {
+            margin-top: 2px;
+
+            color: #65686e;
+
+            font-size: 11px;
+        }
+
+        .change-list {
+            display: flex;
+            flex-direction: column;
+
+            gap: 5px;
+        }
+
+        .change-line {
+            color: #d0d2d6;
+
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .before-line {
+            color: #c8a1a5;
+        }
+
+        .after-line {
+            color: #a6cdb3;
+        }
+
+        .empty-value {
+            color: #55585e;
+        }
+
+        .empty {
+            padding: 34px;
+
+            color: #65686e;
+            text-align: center;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            gap: 10px;
+
+            margin-top: 18px;
+        }
+
+        .page-link,
+        .page-current {
+            padding: 8px 12px;
+
+            border-radius: 8px;
+
+            font-size: 13px;
+        }
+
+        .page-link {
+            border: 1px solid #3a3d43;
+
+            background: #1b1d21;
+            color: #c7c9ce;
+
+            text-decoration: none;
+        }
+
+        .page-link:hover {
+            background: #24262b;
+            color: #ffffff;
+        }
+
+        .page-current {
+            color: #96999f;
+        }
+
+        @media (max-width: 1000px) {
+
+            body {
+                padding: 18px;
+            }
+
+            .audit-list {
+                overflow-x: auto;
+            }
+
+            .audit-row {
+                min-width: 1150px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a
+        href="/admin/users"
+        class="back"
+    >
+        ← Пользователи
+    </a>
+
+
+    <div class="header">
+
+        <h1>
+            Журнал аудита
+        </h1>
+
+    </div>
+
+
+    <form
+        class="filters"
+        method="get"
+        action="/admin/audit"
+    >
+
+        <div class="filter-field">
+
+            <label
+                class="filter-label"
+                for="action"
+            >
+                Тип события
+            </label>
+
+            <select
+                id="action"
+                class="filter-select"
+                name="action"
+            >
+
+                <option value="">
+                    Все события
+                </option>
+
+                {% for action_code in action_codes %}
+
+                    <option
+                        value="{{ action_code }}"
+                        {% if current_action == action_code %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ action_code }}
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <div class="filter-field">
+
+            <label
+                class="filter-label"
+                for="actor"
+            >
+                Кто изменил
+            </label>
+
+            <input
+                id="actor"
+                class="filter-input"
+                type="text"
+                name="actor"
+                value="{{ current_actor or '' }}"
+                placeholder="ФИО или ID"
+            >
+
+        </div>
+
+
+        <div class="filter-field">
+
+            <label
+                class="filter-label"
+                for="target"
+            >
+                Пользователь
+            </label>
+
+            <input
+                id="target"
+                class="filter-input"
+                type="text"
+                name="target"
+                value="{{ current_target or '' }}"
+                placeholder="ФИО или ID"
+            >
+
+        </div>
+
+
+        <button
+            class="filter-button"
+            type="submit"
+        >
+            Найти
+        </button>
+
+
+        <a
+            class="reset-button"
+            href="/admin/audit"
+        >
+            Сбросить
+        </a>
+
+    </form>
+
+
+    <div class="summary">
+        Найдено записей: {{ total_count }}
+    </div>
+
+
+    <div class="audit-list">
+
+        <div class="audit-row audit-header">
+
+            <div>
+                Дата
+            </div>
+
+            <div>
+                Кто
+            </div>
+
+            <div>
+                Пользователь
+            </div>
+
+            <div>
+                Было
+            </div>
+
+            <div>
+                Стало
+            </div>
+
+            <div>
+                IP
+            </div>
+
+        </div>
+
+
+        {% for item in audit_items %}
+
+            <div class="audit-row">
+
+                <div class="cell">
+                    {{ item.log.created_at.strftime("%d.%m.%Y %H:%M:%S") }}
+                </div>
+
+
+                <div class="cell">
+
+                    {% if item.actor %}
+
+                        <div class="primary">
+                            {{ item.actor.fio }}
+                        </div>
+
+                        <div class="user-id">
+                            ID {{ item.actor.id }}
+                        </div>
+
+                    {% elif item.log.actor_user_id %}
+
+                        <div class="primary">
+                            ID {{ item.log.actor_user_id }}
+                        </div>
+
+                    {% else %}
+
+                        <span class="empty-value">
+                            Система
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="cell">
+
+                    {% if item.target %}
+
+                        <div class="primary">
+                            {{ item.target.fio }}
+                        </div>
+
+                        <div class="user-id">
+                            ID {{ item.target.id }}
+                        </div>
+
+                    {% elif item.log.target_user_id %}
+
+                        <div class="primary">
+                            ID {{ item.log.target_user_id }}
+                        </div>
+
+                    {% else %}
+
+                        <span class="empty-value">
+                            —
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="cell">
+
+                    {% if item.before_lines %}
+
+                        <div class="change-list">
+
+                            {% for line in item.before_lines %}
+
+                                <div class="change-line before-line">
+                                    {{ line }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <span class="empty-value">
+                            —
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="cell">
+
+                    {% if item.after_lines %}
+
+                        <div class="change-list">
+
+                            {% for line in item.after_lines %}
+
+                                <div class="change-line after-line">
+                                    {{ line }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% else %}
+
+                        <span class="empty-value">
+                            —
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+
+                <div class="cell">
+
+                    {% if item.log.ip_address %}
+
+                        {{ item.log.ip_address }}
+
+                    {% else %}
+
+                        <span class="empty-value">
+                            —
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty">
+                Записей аудита не найдено.
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+
+    {% if total_pages > 1 %}
+
+        <div class="pagination">
+
+            {% if page > 1 %}
+
+                <a
+                    class="page-link"
+                    href="{{ previous_page_url }}"
+                >
+                    ← Назад
+                </a>
+
+            {% endif %}
+
+
+            <div class="page-current">
+                Страница {{ page }} из {{ total_pages }}
+            </div>
+
+
+            {% if page < total_pages %}
+
+                <a
+                    class="page-link"
+                    href="{{ next_page_url }}"
+                >
+                    Вперёд →
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>

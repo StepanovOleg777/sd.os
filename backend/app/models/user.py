@@ -3,9 +3,13 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     String,
 )
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+)
 
 from backend.app.core.database import Base
 
@@ -40,6 +44,15 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
+    )
+
+    department_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "departments.id",
+            ondelete="SET NULL",
+        ),
+        nullable=True,
+        index=True,
     )
 
     status: Mapped[str] = mapped_column(

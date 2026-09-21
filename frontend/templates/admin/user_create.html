@@ -70,7 +70,8 @@
         }
 
         input[type="text"],
-        input[type="email"] {
+        input[type="email"],
+        select {
             width: 100%;
 
             padding: 12px 14px;
@@ -86,7 +87,8 @@
             font-size: 15px;
         }
 
-        input:focus {
+        input:focus,
+        select:focus {
             border-color: #7277ff;
         }
 
@@ -112,6 +114,23 @@
 
         .role:last-child {
             margin-bottom: 0;
+        }
+
+        .department-field {
+            display: none;
+        }
+
+        .department-field.visible {
+            display: block;
+        }
+
+        .field-note {
+            margin-top: 8px;
+
+            color: #65686e;
+
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         .error {
@@ -430,6 +449,7 @@
                         <label class="role">
 
                             <input
+                                class="role-checkbox"
                                 type="checkbox"
                                 name="roles"
                                 value="{{ role.code }}"
@@ -443,6 +463,47 @@
 
                     {% endfor %}
 
+                </div>
+
+            </div>
+
+
+            <div
+                id="department-field"
+                class="field department-field"
+            >
+
+                <label
+                    class="field-label"
+                    for="department-id"
+                >
+                    Отдел
+                </label>
+
+                <select
+                    id="department-id"
+                    name="department_id"
+                >
+
+                    <option value="">
+                        Выберите отдел
+                    </option>
+
+                    {% for department in departments %}
+
+                        <option
+                            value="{{ department.id }}"
+                        >
+                            {{ department.name }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <div class="field-note">
+                    Отдел обязателен для сотрудника
+                    и руководителя отдела.
                 </div>
 
             </div>
@@ -463,6 +524,80 @@
 
 
 <script>
+    function updateDepartmentVisibility() {
+        const roleCheckboxes =
+            document.querySelectorAll(
+                ".role-checkbox"
+            );
+
+        const departmentField =
+            document.getElementById(
+                "department-field"
+            );
+
+        const departmentSelect =
+            document.getElementById(
+                "department-id"
+            );
+
+        if (
+            !departmentField
+            || !departmentSelect
+        ) {
+            return;
+        }
+
+        let departmentRequired = false;
+
+        roleCheckboxes.forEach(
+            (checkbox) => {
+                if (
+                    checkbox.checked
+                    && (
+                        checkbox.value === "employee"
+                        || checkbox.value === "department_head"
+                    )
+                ) {
+                    departmentRequired = true;
+                }
+            }
+        );
+
+        if (departmentRequired) {
+            departmentField.classList.add(
+                "visible"
+            );
+
+            departmentSelect.required = true;
+
+        } else {
+            departmentField.classList.remove(
+                "visible"
+            );
+
+            departmentSelect.required = false;
+            departmentSelect.value = "";
+        }
+    }
+
+
+    document
+        .querySelectorAll(
+            ".role-checkbox"
+        )
+        .forEach(
+            (checkbox) => {
+                checkbox.addEventListener(
+                    "change",
+                    updateDepartmentVisibility
+                );
+            }
+        );
+
+
+    updateDepartmentVisibility();
+
+
     async function copyInviteLink() {
         const input =
             document.getElementById(
@@ -484,6 +619,7 @@
 
         } catch (error) {
             input.select();
+
             document.execCommand(
                 "copy"
             );
