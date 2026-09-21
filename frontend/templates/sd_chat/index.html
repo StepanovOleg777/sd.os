@@ -1,0 +1,2171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Сообщения — SD.OS</title>
+
+    <script>
+        (() => {
+            const savedTheme = localStorage.getItem("sdos-theme");
+
+            if (savedTheme === "light" || savedTheme === "dark") {
+                document.documentElement.dataset.theme = savedTheme;
+            } else {
+                document.documentElement.dataset.theme = "dark";
+            }
+        })();
+    </script>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/style.css') }}?v=2"
+    >
+
+    <style>
+        .sd-chat-layout {
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr);
+
+            flex: 1;
+
+            min-width: 0;
+            min-height: 0;
+
+            overflow: hidden;
+        }
+
+        .sd-chat-conversations {
+            display: flex;
+            flex-direction: column;
+
+            min-width: 0;
+            min-height: 0;
+
+            border-right: 1px solid var(--border);
+
+            background: var(--bg-secondary);
+        }
+
+        .sd-chat-conversations-header {
+            padding: 16px;
+
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sd-chat-title {
+            margin: 0 0 12px;
+
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .sd-chat-search-wrapper {
+            position: relative;
+        }
+
+        .sd-chat-search {
+            width: 100%;
+            height: 40px;
+
+            padding: 0 38px 0 12px;
+
+            border: 1px solid var(--border);
+            border-radius: 10px;
+
+            outline: none;
+
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .sd-chat-search::placeholder {
+            color: var(--text-muted);
+        }
+
+        .sd-chat-search:focus {
+            border-color: var(--accent);
+        }
+
+        .sd-chat-clear {
+            position: absolute;
+
+            top: 50%;
+            right: 7px;
+
+            width: 27px;
+            height: 27px;
+
+            transform: translateY(-50%);
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 7px;
+
+            background: transparent;
+            color: var(--text-muted);
+
+            cursor: pointer;
+        }
+
+        .sd-chat-clear:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .sd-chat-section-caption {
+            padding: 12px 16px 8px;
+
+            color: var(--text-muted);
+
+            font-size: 10px;
+            font-weight: 600;
+
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .sd-chat-list,
+        .sd-chat-search-results {
+            flex: 1;
+
+            min-height: 0;
+
+            overflow-y: auto;
+        }
+
+        .sd-chat-search-results {
+            display: none;
+        }
+
+        .sd-chat-conversation-item {
+            display: grid;
+
+            grid-template-columns:
+                42px
+                minmax(0, 1fr)
+                auto;
+
+            gap: 10px;
+
+            padding: 10px 13px;
+
+            cursor: pointer;
+
+            border-left: 3px solid transparent;
+
+            transition:
+                background 120ms ease,
+                border-color 120ms ease;
+        }
+
+        .sd-chat-conversation-item:hover {
+            background: var(--bg-elevated);
+        }
+
+        .sd-chat-conversation-item.active {
+            border-left-color: var(--accent);
+
+            background: var(--bg-elevated);
+        }
+
+        .sd-chat-avatar {
+            width: 42px;
+            height: 42px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            flex-shrink: 0;
+
+            border: 1px solid var(--border);
+            border-radius: 50%;
+
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+
+            font-size: 13px;
+            font-weight: 600;
+
+            text-transform: uppercase;
+        }
+
+        .sd-chat-conversation-main {
+            min-width: 0;
+        }
+
+        .sd-chat-conversation-name {
+            margin-top: 2px;
+
+            overflow: hidden;
+
+            color: var(--text-primary);
+
+            font-size: 13px;
+            font-weight: 500;
+
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sd-chat-conversation-preview {
+            margin-top: 5px;
+
+            overflow: hidden;
+
+            color: var(--text-muted);
+
+            font-size: 11px;
+
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sd-chat-conversation-meta {
+            display: flex;
+            align-items: flex-end;
+            flex-direction: column;
+
+            gap: 6px;
+
+            padding-top: 2px;
+        }
+
+        .sd-chat-conversation-time {
+            color: var(--text-muted);
+
+            font-size: 9px;
+        }
+
+        .sd-chat-unread {
+            min-width: 18px;
+            height: 18px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 0 5px;
+
+            border-radius: 9px;
+
+            background: var(--accent);
+            color: #ffffff;
+
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .sd-chat-search-user {
+            display: grid;
+
+            grid-template-columns:
+                42px
+                minmax(0, 1fr);
+
+            gap: 10px;
+
+            padding: 10px 13px;
+
+            cursor: pointer;
+        }
+
+        .sd-chat-search-user:hover {
+            background: var(--bg-elevated);
+        }
+
+        .sd-chat-search-user-name {
+            margin-top: 3px;
+
+            overflow: hidden;
+
+            color: var(--text-primary);
+
+            font-size: 13px;
+
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sd-chat-search-user-caption {
+            margin-top: 4px;
+
+            color: var(--text-muted);
+
+            font-size: 10px;
+        }
+
+        .sd-chat-list-empty {
+            padding: 28px 18px;
+
+            color: var(--text-muted);
+
+            font-size: 12px;
+            line-height: 1.6;
+
+            text-align: center;
+        }
+
+        .sd-chat-main {
+            display: flex;
+            flex-direction: column;
+
+            min-width: 0;
+            min-height: 0;
+
+            background: var(--bg-primary);
+        }
+
+        .sd-chat-empty {
+            flex: 1;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 30px;
+        }
+
+        .sd-chat-empty-content {
+            max-width: 420px;
+
+            text-align: center;
+        }
+
+        .sd-chat-empty-icon {
+            width: 64px;
+            height: 64px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            margin: 0 auto 16px;
+
+            border: 1px solid var(--border);
+            border-radius: 50%;
+
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        .sd-chat-empty-icon svg {
+            width: 28px;
+            height: 28px;
+
+            fill: currentColor;
+        }
+
+        .sd-chat-empty-title {
+            margin-bottom: 8px;
+
+            color: var(--text-primary);
+
+            font-size: 17px;
+            font-weight: 500;
+        }
+
+        .sd-chat-empty-text {
+            color: var(--text-muted);
+
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .sd-chat-panel {
+            display: none;
+            flex-direction: column;
+
+            flex: 1;
+
+            min-height: 0;
+        }
+
+        .sd-chat-header {
+            min-height: 64px;
+
+            display: flex;
+            align-items: center;
+
+            gap: 11px;
+
+            padding: 10px 18px;
+
+            border-bottom: 1px solid var(--border);
+
+            background: var(--bg-secondary);
+        }
+
+        .sd-chat-header-avatar {
+            width: 38px;
+            height: 38px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            flex: 0 0 38px;
+
+            border: 1px solid var(--border);
+            border-radius: 50%;
+
+            background: var(--bg-elevated);
+
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .sd-chat-header-user {
+            min-width: 0;
+        }
+
+        .sd-chat-header-name {
+            overflow: hidden;
+
+            color: var(--text-primary);
+
+            font-size: 14px;
+            font-weight: 500;
+
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .sd-chat-header-caption {
+            margin-top: 3px;
+
+            color: var(--text-muted);
+
+            font-size: 10px;
+        }
+
+        .sd-chat-mobile-back {
+            display: none;
+
+            width: 32px;
+            height: 32px;
+
+            align-items: center;
+            justify-content: center;
+
+            flex: 0 0 32px;
+
+            border-radius: 8px;
+
+            background: transparent;
+            color: var(--text-secondary);
+
+            cursor: pointer;
+        }
+
+        .sd-chat-mobile-back:hover {
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+        }
+
+        .sd-chat-messages {
+            flex: 1;
+
+            min-height: 0;
+
+            display: flex;
+            flex-direction: column;
+
+            gap: 7px;
+
+            padding:
+                20px
+                max(
+                    22px,
+                    calc(
+                        (100% - 850px)
+                        / 2
+                    )
+                );
+
+            overflow-y: auto;
+        }
+
+        .sd-chat-message-row {
+            display: flex;
+
+            width: 100%;
+        }
+
+        .sd-chat-message-row.own {
+            justify-content: flex-end;
+        }
+
+        .sd-chat-message {
+            max-width: min(70%, 680px);
+
+            padding: 9px 12px 7px;
+
+            border: 1px solid var(--border);
+            border-radius: 12px 12px 12px 4px;
+
+            background: var(--bg-secondary);
+        }
+
+        .sd-chat-message-row.own .sd-chat-message {
+            border-radius: 12px 12px 4px 12px;
+
+            background: var(--user-message);
+        }
+
+        .sd-chat-message-text {
+            color: var(--text-primary);
+
+            font-size: 13px;
+            line-height: 1.45;
+
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .sd-chat-message-time {
+            margin-top: 4px;
+
+            color: var(--text-muted);
+
+            font-size: 9px;
+
+            text-align: right;
+        }
+
+        .sd-chat-messages-empty {
+            margin: auto;
+
+            color: var(--text-muted);
+
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .sd-chat-composer-wrapper {
+            flex-shrink: 0;
+
+            padding:
+                10px
+                max(
+                    22px,
+                    calc(
+                        (100% - 850px)
+                        / 2
+                    )
+                )
+                14px;
+
+            border-top: 1px solid var(--border);
+
+            background: var(--bg-primary);
+        }
+
+        .sd-chat-error {
+            display: none;
+
+            margin-bottom: 8px;
+
+            color: #d75f68;
+
+            font-size: 11px;
+        }
+
+        .sd-chat-composer {
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                40px;
+
+            align-items: flex-end;
+
+            gap: 8px;
+        }
+
+        .sd-chat-message-input {
+            width: 100%;
+
+            min-height: 42px;
+            max-height: 150px;
+
+            padding: 10px 12px;
+
+            resize: none;
+
+            border: 1px solid var(--border);
+            border-radius: 11px;
+
+            outline: none;
+
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        .sd-chat-message-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .sd-chat-message-input:focus {
+            border-color: var(--accent);
+        }
+
+        .sd-chat-send {
+            width: 40px;
+            height: 40px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 10px;
+
+            background: var(--accent);
+            color: #ffffff;
+
+            cursor: pointer;
+        }
+
+        .sd-chat-send:hover {
+            background: var(--accent-hover);
+        }
+
+        .sd-chat-send:disabled {
+            opacity: 0.4;
+
+            cursor: default;
+        }
+
+        .sd-chat-send svg {
+            width: 18px;
+            height: 18px;
+
+            fill: currentColor;
+        }
+
+        @media (max-width: 900px) {
+            .sd-chat-layout {
+                grid-template-columns: 300px minmax(0, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .sd-chat-layout {
+                display: block;
+
+                position: relative;
+            }
+
+            .sd-chat-conversations {
+                width: 100%;
+                height: 100%;
+            }
+
+            .sd-chat-main {
+                display: none;
+
+                position: absolute;
+                inset: 0;
+
+                z-index: 10;
+            }
+
+            .sd-chat-layout.chat-open
+            .sd-chat-conversations {
+                display: none;
+            }
+
+            .sd-chat-layout.chat-open
+            .sd-chat-main {
+                display: flex;
+            }
+
+            .sd-chat-mobile-back {
+                display: flex;
+            }
+
+            .sd-chat-message {
+                max-width: 86%;
+            }
+
+            .sd-chat-messages {
+                padding: 16px 12px;
+            }
+
+            .sd-chat-composer-wrapper {
+                padding: 9px 12px 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- =====================================================
+         TOPBAR
+    ====================================================== -->
+
+    <header class="topbar">
+
+        <div class="topbar-left">
+
+            <button
+                type="button"
+                id="sidebar-toggle"
+                class="sidebar-toggle"
+                aria-label="Открыть меню"
+                title="Меню"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"
+                    />
+                </svg>
+            </button>
+
+
+            <div class="brand">
+
+                <div class="brand-mark">
+                    <img
+                        src="/static/img/stroydvor.png"
+                        alt="СтройДвор"
+                    >
+                </div>
+
+                <div class="brand-text">
+
+                    <span class="brand-name">
+                        SD.OS
+                    </span>
+
+                    <span class="brand-version">
+                        v{{ app_version }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <div
+                class="current-user"
+                title="{{ current_user.fio }}"
+            >
+                {{ current_user.fio }}
+            </div>
+
+
+            {% if can_access_admin %}
+
+                <a
+                    href="/admin/users"
+                    class="admin-button"
+                    title="Администрирование SD.OS"
+                >
+                    Админка
+                </a>
+
+            {% endif %}
+
+
+            <button
+                type="button"
+                id="theme-toggle"
+                class="theme-toggle"
+                aria-label="Сменить тему"
+                title="Сменить тему"
+            >
+                <span
+                    id="theme-icon"
+                    class="theme-icon"
+                    aria-hidden="true"
+                ></span>
+            </button>
+
+
+            <div class="status">
+                <span class="status-dot"></span>
+                <span>Online</span>
+            </div>
+
+
+            <button
+                type="button"
+                id="logout-button"
+                class="logout-button"
+                aria-label="Выйти"
+                title="Выйти из SD.OS"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M10 17v-2h4V9h-4V7l-5 5 5 5Zm1-14h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-8v-2h8V5h-8V3Z"
+                    />
+                </svg>
+
+                <span>
+                    Выйти
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         WORKSPACE
+    ====================================================== -->
+
+    <div class="workspace">
+
+        <!-- =================================================
+             GLOBAL SIDEBAR
+        ================================================== -->
+
+        <aside
+            id="sidebar"
+            class="sidebar"
+        >
+
+            <nav class="sidebar-nav">
+
+                <a
+                    href="/"
+                    class="sidebar-item"
+                    title="ИИ"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M12 2a7 7 0 0 0-7 7v1.28A4 4 0 0 0 6 18h1v3a1 1 0 0 0 1.55.83L13.65 18H17a4 4 0 0 0 2-7.46V9a7 7 0 0 0-7-7Zm5 14h-4.02L9 18.99V16H6a2 2 0 0 1-.5-3.94L7 11.67V9a5 5 0 0 1 10 0v2.79l1.11.55A2 2 0 0 1 17 16Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        ИИ
+                    </span>
+                </a>
+
+
+                <div
+                    class="sidebar-item disabled"
+                    title="Корпоративный справочник будет подключён позже"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm0 2h14v14H5V5Zm3 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm6-1v2h3V8h-3Zm0 4v2h3v-2h-3ZM7 15c-1.67 0-3 1.33-3 3h2c0-.56.44-1 1-1h2c.56 0 1 .44 1 1h2c0-1.67-1.33-3-3-3H7Zm7 1v2h3v-2h-3Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Справочник
+                    </span>
+                </div>
+
+
+                <a
+                    href="/sd-chat"
+                    class="sidebar-item active"
+                    title="Сообщения"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M21.8 2.2a1 1 0 0 0-1.05-.23L2.62 9.09a1 1 0 0 0 .06 1.88l7.12 2.37 2.37 7.12a1 1 0 0 0 .93.68h.03a1 1 0 0 0 .92-.62l7.96-17.25a1 1 0 0 0-.21-1.07ZM5.92 10.1l12.37-4.86-7.59 6.1-4.78-1.24Zm7.24 7.3-1.52-4.56 6.24-5.02-4.72 9.58Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Сообщения
+                    </span>
+                </a>
+
+            </nav>
+
+
+            <div class="sidebar-bottom">
+
+                <div class="sidebar-user">
+
+                    <div class="sidebar-user-avatar">
+                        {{ current_user.fio[:1] | upper }}
+                    </div>
+
+                    <div class="sidebar-user-data">
+
+                        <div
+                            class="sidebar-user-name"
+                            title="{{ current_user.fio }}"
+                        >
+                            {{ current_user.fio }}
+                        </div>
+
+                        <div class="sidebar-user-caption">
+                            SD.OS
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <div
+            id="sidebar-backdrop"
+            class="sidebar-backdrop"
+        ></div>
+
+
+        <!-- =================================================
+             SD CHAT
+        ================================================== -->
+
+        <section
+            id="sd-chat-layout"
+            class="sd-chat-layout"
+        >
+
+            <!-- =============================================
+                 CONVERSATIONS
+            ============================================== -->
+
+            <aside class="sd-chat-conversations">
+
+                <div class="sd-chat-conversations-header">
+
+                    <h1 class="sd-chat-title">
+                        Сообщения
+                    </h1>
+
+
+                    <div class="sd-chat-search-wrapper">
+
+                        <input
+                            id="userSearch"
+                            class="sd-chat-search"
+                            type="text"
+                            autocomplete="off"
+                            placeholder="Найти сотрудника..."
+                        >
+
+                        <button
+                            id="clearSearch"
+                            class="sd-chat-clear"
+                            type="button"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="conversationSectionTitle"
+                    class="sd-chat-section-caption"
+                >
+                    Диалоги
+                </div>
+
+
+                <div
+                    id="conversationList"
+                    class="sd-chat-list"
+                >
+                    <div class="sd-chat-list-empty">
+                        Загрузка...
+                    </div>
+                </div>
+
+
+                <div
+                    id="searchResults"
+                    class="sd-chat-search-results"
+                ></div>
+
+            </aside>
+
+
+            <!-- =============================================
+                 CURRENT CHAT
+            ============================================== -->
+
+            <main class="sd-chat-main">
+
+                <div
+                    id="emptyChat"
+                    class="sd-chat-empty"
+                >
+
+                    <div class="sd-chat-empty-content">
+
+                        <div class="sd-chat-empty-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M21.8 2.2a1 1 0 0 0-1.05-.23L2.62 9.09a1 1 0 0 0 .06 1.88l7.12 2.37 2.37 7.12a1 1 0 0 0 .93.68h.03a1 1 0 0 0 .92-.62l7.96-17.25a1 1 0 0 0-.21-1.07ZM5.92 10.1l12.37-4.86-7.59 6.1-4.78-1.24Zm7.24 7.3-1.52-4.56 6.24-5.02-4.72 9.58Z"
+                                />
+                            </svg>
+
+                        </div>
+
+                        <div class="sd-chat-empty-title">
+                            Сообщения SD.OS
+                        </div>
+
+                        <div class="sd-chat-empty-text">
+                            Выберите диалог или найдите сотрудника,
+                            чтобы начать переписку.
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="chatPanel"
+                    class="sd-chat-panel"
+                >
+
+                    <header class="sd-chat-header">
+
+                        <button
+                            id="mobileBack"
+                            class="sd-chat-mobile-back"
+                            type="button"
+                        >
+                            ←
+                        </button>
+
+                        <div
+                            id="chatAvatar"
+                            class="sd-chat-header-avatar"
+                        ></div>
+
+                        <div class="sd-chat-header-user">
+
+                            <div
+                                id="chatUserName"
+                                class="sd-chat-header-name"
+                            ></div>
+
+                            <div class="sd-chat-header-caption">
+                                Внутренние сообщения SD.OS
+                            </div>
+
+                        </div>
+
+                    </header>
+
+
+                    <div
+                        id="messages"
+                        class="sd-chat-messages"
+                    ></div>
+
+
+                    <div class="sd-chat-composer-wrapper">
+
+                        <div
+                            id="composerError"
+                            class="sd-chat-error"
+                        ></div>
+
+
+                        <div class="sd-chat-composer">
+
+                            <textarea
+                                id="messageInput"
+                                class="sd-chat-message-input"
+                                rows="1"
+                                maxlength="10000"
+                                placeholder="Сообщение..."
+                            ></textarea>
+
+
+                            <button
+                                id="sendButton"
+                                class="sd-chat-send"
+                                type="button"
+                                disabled
+                                title="Отправить"
+                            >
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    aria-hidden="true"
+                                >
+                                    <path
+                                        d="M3 20.5 21 12 3 3.5v6.6l12 1.9-12 1.9v6.6Z"
+                                    />
+                                </svg>
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </main>
+
+        </section>
+
+    </div>
+
+</div>
+
+
+<script>
+    const CURRENT_USER_ID = {{ current_user.id }};
+
+    const layout =
+        document.getElementById(
+            "sd-chat-layout"
+        );
+
+    const conversationList =
+        document.getElementById(
+            "conversationList"
+        );
+
+    const conversationSectionTitle =
+        document.getElementById(
+            "conversationSectionTitle"
+        );
+
+    const searchResults =
+        document.getElementById(
+            "searchResults"
+        );
+
+    const userSearch =
+        document.getElementById(
+            "userSearch"
+        );
+
+    const clearSearch =
+        document.getElementById(
+            "clearSearch"
+        );
+
+    const emptyChat =
+        document.getElementById(
+            "emptyChat"
+        );
+
+    const chatPanel =
+        document.getElementById(
+            "chatPanel"
+        );
+
+    const chatAvatar =
+        document.getElementById(
+            "chatAvatar"
+        );
+
+    const chatUserName =
+        document.getElementById(
+            "chatUserName"
+        );
+
+    const messagesElement =
+        document.getElementById(
+            "messages"
+        );
+
+    const messageInput =
+        document.getElementById(
+            "messageInput"
+        );
+
+    const sendButton =
+        document.getElementById(
+            "sendButton"
+        );
+
+    const composerError =
+        document.getElementById(
+            "composerError"
+        );
+
+    const mobileBack =
+        document.getElementById(
+            "mobileBack"
+        );
+
+
+    let conversations = [];
+
+    let activeConversationId = null;
+
+    let searchTimer = null;
+
+
+    function escapeHtml(value) {
+        const div =
+            document.createElement(
+                "div"
+            );
+
+        div.textContent =
+            value ?? "";
+
+        return div.innerHTML;
+    }
+
+
+    function initials(fio) {
+        if (!fio) {
+            return "?";
+        }
+
+        const parts =
+            fio
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean);
+
+        if (parts.length === 1) {
+            return parts[0]
+                .slice(0, 2)
+                .toUpperCase();
+        }
+
+        return (
+            parts[0][0]
+            + parts[1][0]
+        ).toUpperCase();
+    }
+
+
+    function formatTime(value) {
+        if (!value) {
+            return "";
+        }
+
+        const date =
+            new Date(value);
+
+        if (
+            Number.isNaN(
+                date.getTime()
+            )
+        ) {
+            return "";
+        }
+
+        return date.toLocaleTimeString(
+            "ru-RU",
+            {
+                hour: "2-digit",
+                minute: "2-digit",
+            }
+        );
+    }
+
+
+    function showError(message) {
+        composerError.textContent =
+            message
+            || "Произошла ошибка.";
+
+        composerError.style.display =
+            "block";
+    }
+
+
+    function clearError() {
+        composerError.textContent = "";
+
+        composerError.style.display =
+            "none";
+    }
+
+
+    async function apiRequest(
+        url,
+        options = {}
+    ) {
+        const response = await fetch(
+            url,
+            {
+                credentials: "same-origin",
+                ...options,
+                headers: {
+                    "Content-Type":
+                        "application/json",
+                    ...(options.headers || {}),
+                },
+            }
+        );
+
+        let data = null;
+
+        try {
+            data =
+                await response.json();
+
+        } catch (_) {
+            data = null;
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                data?.detail
+                || "Ошибка запроса."
+            );
+        }
+
+        return data;
+    }
+
+
+    async function loadConversations() {
+        try {
+            const data =
+                await apiRequest(
+                    "/api/sd-chat/conversations"
+                );
+
+            conversations =
+                data.conversations
+                || [];
+
+            renderConversations();
+
+        } catch (error) {
+            conversationList.innerHTML = `
+                <div class="sd-chat-list-empty">
+                    ${escapeHtml(error.message)}
+                </div>
+            `;
+        }
+    }
+
+
+    function renderConversations() {
+        if (!conversations.length) {
+            conversationList.innerHTML = `
+                <div class="sd-chat-list-empty">
+                    Диалогов пока нет.<br>
+                    Найдите сотрудника выше,
+                    чтобы начать переписку.
+                </div>
+            `;
+
+            return;
+        }
+
+        conversationList.innerHTML =
+            conversations
+                .map(item => {
+                    const user =
+                        item.other_user;
+
+                    const name =
+                        user?.fio
+                        || item.title
+                        || "Диалог";
+
+                    const last =
+                        item.last_message;
+
+                    const preview =
+                        last?.text
+                        || "Нет сообщений";
+
+                    const active =
+                        Number(item.id)
+                        === Number(
+                            activeConversationId
+                        );
+
+                    const unread =
+                        Number(
+                            item.unread_count
+                            || 0
+                        );
+
+                    return `
+                        <div
+                            class="
+                                sd-chat-conversation-item
+                                ${active ? "active" : ""}
+                            "
+                            data-conversation-id="${item.id}"
+                        >
+
+                            <div class="sd-chat-avatar">
+                                ${escapeHtml(initials(name))}
+                            </div>
+
+                            <div class="sd-chat-conversation-main">
+
+                                <div class="sd-chat-conversation-name">
+                                    ${escapeHtml(name)}
+                                </div>
+
+                                <div class="sd-chat-conversation-preview">
+                                    ${escapeHtml(preview)}
+                                </div>
+
+                            </div>
+
+                            <div class="sd-chat-conversation-meta">
+
+                                <div class="sd-chat-conversation-time">
+                                    ${escapeHtml(
+                                        formatTime(
+                                            last?.created_at
+                                            || item.updated_at
+                                        )
+                                    )}
+                                </div>
+
+                                ${
+                                    unread > 0
+                                    ? `
+                                        <div class="sd-chat-unread">
+                                            ${
+                                                unread > 99
+                                                ? "99+"
+                                                : unread
+                                            }
+                                        </div>
+                                    `
+                                    : ""
+                                }
+
+                            </div>
+
+                        </div>
+                    `;
+                })
+                .join("");
+
+        conversationList
+            .querySelectorAll(
+                ".sd-chat-conversation-item"
+            )
+            .forEach(element => {
+                element.addEventListener(
+                    "click",
+                    () => {
+                        openConversation(
+                            Number(
+                                element.dataset
+                                    .conversationId
+                            )
+                        );
+                    }
+                );
+            });
+    }
+
+
+    async function openConversation(
+        conversationId
+    ) {
+        clearError();
+
+        try {
+            const data =
+                await apiRequest(
+                    `/api/sd-chat/conversations/${conversationId}/messages`
+                );
+
+            activeConversationId =
+                conversationId;
+
+            emptyChat.style.display =
+                "none";
+
+            chatPanel.style.display =
+                "flex";
+
+            layout.classList.add(
+                "chat-open"
+            );
+
+            const otherUser =
+                data.conversation
+                    ?.other_user
+                || null;
+
+            const name =
+                otherUser?.fio
+                || data.conversation
+                    ?.title
+                || "Диалог";
+
+            chatUserName.textContent =
+                name;
+
+            chatAvatar.textContent =
+                initials(name);
+
+            renderMessages(
+                data.messages
+                || []
+            );
+
+            renderConversations();
+
+            const messageList =
+                data.messages
+                || [];
+
+            if (messageList.length) {
+                const lastMessage =
+                    messageList[
+                        messageList.length - 1
+                    ];
+
+                await markRead(
+                    conversationId,
+                    lastMessage.id
+                );
+            }
+
+            await loadConversations();
+
+        } catch (error) {
+            alert(
+                error.message
+            );
+        }
+    }
+
+
+    function renderMessages(messages) {
+        if (!messages.length) {
+            messagesElement.innerHTML = `
+                <div class="sd-chat-messages-empty">
+                    Сообщений пока нет.<br>
+                    Напишите первое сообщение.
+                </div>
+            `;
+
+            return;
+        }
+
+        messagesElement.innerHTML =
+            messages
+                .map(message => {
+                    const own =
+                        Number(
+                            message.sender_user_id
+                        )
+                        === Number(
+                            CURRENT_USER_ID
+                        );
+
+                    return `
+                        <div
+                            class="
+                                sd-chat-message-row
+                                ${own ? "own" : ""}
+                            "
+                        >
+
+                            <div class="sd-chat-message">
+
+                                <div class="sd-chat-message-text">${escapeHtml(
+                                    message.text
+                                )}</div>
+
+                                <div class="sd-chat-message-time">
+                                    ${escapeHtml(
+                                        formatTime(
+                                            message.created_at
+                                        )
+                                    )}
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+                })
+                .join("");
+
+        requestAnimationFrame(
+            () => {
+                messagesElement.scrollTop =
+                    messagesElement.scrollHeight;
+            }
+        );
+    }
+
+
+    async function startConversation(
+        userId
+    ) {
+        try {
+            const data =
+                await apiRequest(
+                    "/api/sd-chat/direct",
+                    {
+                        method: "POST",
+                        body: JSON.stringify(
+                            {
+                                user_id: userId,
+                            }
+                        ),
+                    }
+                );
+
+            userSearch.value = "";
+
+            setSearchMode(false);
+
+            await loadConversations();
+
+            await openConversation(
+                data.conversation_id
+            );
+
+        } catch (error) {
+            alert(
+                error.message
+            );
+        }
+    }
+
+
+    async function searchUsers(
+        query
+    ) {
+        try {
+            const data =
+                await apiRequest(
+                    "/api/sd-chat/users?q="
+                    + encodeURIComponent(
+                        query
+                    )
+                );
+
+            renderSearchResults(
+                data.users || []
+            );
+
+        } catch (error) {
+            searchResults.innerHTML = `
+                <div class="sd-chat-list-empty">
+                    ${escapeHtml(error.message)}
+                </div>
+            `;
+        }
+    }
+
+
+    function renderSearchResults(
+        users
+    ) {
+        if (!users.length) {
+            searchResults.innerHTML = `
+                <div class="sd-chat-list-empty">
+                    Сотрудники не найдены.
+                </div>
+            `;
+
+            return;
+        }
+
+        searchResults.innerHTML =
+            users
+                .map(user => {
+                    return `
+                        <div
+                            class="sd-chat-search-user"
+                            data-user-id="${user.id}"
+                        >
+
+                            <div class="sd-chat-avatar">
+                                ${escapeHtml(
+                                    initials(
+                                        user.fio
+                                    )
+                                )}
+                            </div>
+
+                            <div>
+
+                                <div class="sd-chat-search-user-name">
+                                    ${escapeHtml(user.fio)}
+                                </div>
+
+                                <div class="sd-chat-search-user-caption">
+                                    Начать диалог
+                                </div>
+
+                            </div>
+
+                        </div>
+                    `;
+                })
+                .join("");
+
+        searchResults
+            .querySelectorAll(
+                ".sd-chat-search-user"
+            )
+            .forEach(element => {
+                element.addEventListener(
+                    "click",
+                    () => {
+                        startConversation(
+                            Number(
+                                element.dataset
+                                    .userId
+                            )
+                        );
+                    }
+                );
+            });
+    }
+
+
+    function setSearchMode(
+        enabled
+    ) {
+        if (enabled) {
+            conversationList.style.display =
+                "none";
+
+            searchResults.style.display =
+                "block";
+
+            conversationSectionTitle.textContent =
+                "Сотрудники";
+
+            clearSearch.style.display =
+                "flex";
+
+        } else {
+            conversationList.style.display =
+                "block";
+
+            searchResults.style.display =
+                "none";
+
+            conversationSectionTitle.textContent =
+                "Диалоги";
+
+            clearSearch.style.display =
+                "none";
+
+            searchResults.innerHTML =
+                "";
+        }
+    }
+
+
+    async function sendMessage() {
+        const text =
+            messageInput
+                .value
+                .trim();
+
+        if (
+            !text
+            || !activeConversationId
+        ) {
+            return;
+        }
+
+        clearError();
+
+        sendButton.disabled = true;
+
+        try {
+            await apiRequest(
+                `/api/sd-chat/conversations/${activeConversationId}/messages`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(
+                        {
+                            text,
+                        }
+                    ),
+                }
+            );
+
+            messageInput.value = "";
+
+            autoResizeTextarea();
+
+            await openConversation(
+                activeConversationId
+            );
+
+        } catch (error) {
+            showError(
+                error.message
+            );
+
+        } finally {
+            updateSendButton();
+        }
+    }
+
+
+    async function markRead(
+        conversationId,
+        messageId
+    ) {
+        try {
+            await apiRequest(
+                `/api/sd-chat/conversations/${conversationId}/read`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(
+                        {
+                            message_id:
+                                messageId,
+                        }
+                    ),
+                }
+            );
+
+        } catch (_) {
+        }
+    }
+
+
+    function updateSendButton() {
+        sendButton.disabled =
+            !messageInput.value.trim()
+            || !activeConversationId;
+    }
+
+
+    function autoResizeTextarea() {
+        messageInput.style.height =
+            "auto";
+
+        messageInput.style.height =
+            Math.min(
+                messageInput.scrollHeight,
+                150
+            ) + "px";
+    }
+
+
+    userSearch.addEventListener(
+        "input",
+        () => {
+            const query =
+                userSearch
+                    .value
+                    .trim();
+
+            clearTimeout(
+                searchTimer
+            );
+
+            if (!query) {
+                setSearchMode(false);
+
+                return;
+            }
+
+            setSearchMode(true);
+
+            searchResults.innerHTML = `
+                <div class="sd-chat-list-empty">
+                    Поиск...
+                </div>
+            `;
+
+            searchTimer =
+                setTimeout(
+                    () => {
+                        searchUsers(
+                            query
+                        );
+                    },
+                    250
+                );
+        }
+    );
+
+
+    clearSearch.addEventListener(
+        "click",
+        () => {
+            userSearch.value = "";
+
+            userSearch.focus();
+
+            setSearchMode(false);
+        }
+    );
+
+
+    messageInput.addEventListener(
+        "input",
+        () => {
+            autoResizeTextarea();
+
+            updateSendButton();
+        }
+    );
+
+
+    messageInput.addEventListener(
+        "keydown",
+        event => {
+            if (
+                event.key === "Enter"
+                && !event.shiftKey
+            ) {
+                event.preventDefault();
+
+                sendMessage();
+            }
+        }
+    );
+
+
+    sendButton.addEventListener(
+        "click",
+        sendMessage
+    );
+
+
+    mobileBack.addEventListener(
+        "click",
+        () => {
+            layout.classList.remove(
+                "chat-open"
+            );
+        }
+    );
+
+
+    loadConversations();
+</script>
+
+
+<script>
+    (() => {
+        const toggle =
+            document.getElementById(
+                "theme-toggle"
+            );
+
+        const icon =
+            document.getElementById(
+                "theme-icon"
+            );
+
+        function updateThemeIcon() {
+            const theme =
+                document.documentElement.dataset.theme
+                || "dark";
+
+            icon.textContent =
+                theme === "dark"
+                    ? "☀"
+                    : "☾";
+        }
+
+        updateThemeIcon();
+
+        toggle.addEventListener(
+            "click",
+            () => {
+                const currentTheme =
+                    document.documentElement.dataset.theme
+                    || "dark";
+
+                const nextTheme =
+                    currentTheme === "dark"
+                        ? "light"
+                        : "dark";
+
+                document.documentElement.dataset.theme =
+                    nextTheme;
+
+                localStorage.setItem(
+                    "sdos-theme",
+                    nextTheme
+                );
+
+                updateThemeIcon();
+            }
+        );
+    })();
+
+
+    (() => {
+        const logoutButton =
+            document.getElementById(
+                "logout-button"
+            );
+
+        logoutButton.addEventListener(
+            "click",
+            async () => {
+                logoutButton.disabled = true;
+
+                try {
+                    const response =
+                        await fetch(
+                            "/api/auth/logout",
+                            {
+                                method: "POST",
+                            }
+                        );
+
+                    if (!response.ok) {
+                        logoutButton.disabled =
+                            false;
+
+                        return;
+                    }
+
+                    window.location.href =
+                        "/login";
+
+                } catch (error) {
+                    logoutButton.disabled =
+                        false;
+                }
+            }
+        );
+    })();
+
+
+    (() => {
+        const sidebar =
+            document.getElementById(
+                "sidebar"
+            );
+
+        const toggle =
+            document.getElementById(
+                "sidebar-toggle"
+            );
+
+        const backdrop =
+            document.getElementById(
+                "sidebar-backdrop"
+            );
+
+        function openSidebar() {
+            sidebar.classList.add(
+                "mobile-open"
+            );
+
+            backdrop.classList.add(
+                "visible"
+            );
+
+            document.body.classList.add(
+                "sidebar-mobile-open"
+            );
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove(
+                "mobile-open"
+            );
+
+            backdrop.classList.remove(
+                "visible"
+            );
+
+            document.body.classList.remove(
+                "sidebar-mobile-open"
+            );
+        }
+
+        toggle.addEventListener(
+            "click",
+            () => {
+                if (
+                    sidebar.classList.contains(
+                        "mobile-open"
+                    )
+                ) {
+                    closeSidebar();
+
+                } else {
+                    openSidebar();
+                }
+            }
+        );
+
+        backdrop.addEventListener(
+            "click",
+            closeSidebar
+        );
+
+        window.addEventListener(
+            "resize",
+            () => {
+                if (
+                    window.innerWidth > 800
+                ) {
+                    closeSidebar();
+                }
+            }
+        );
+    })();
+</script>
+
+</body>
+</html>

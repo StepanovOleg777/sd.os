@@ -32,26 +32,52 @@
 
 <div class="app">
 
+    <!-- =====================================================
+         TOPBAR
+    ====================================================== -->
+
     <header class="topbar">
 
-        <div class="brand">
+        <div class="topbar-left">
 
-            <div class="brand-mark">
-                <img
-                    src="/static/img/stroydvor.png"
-                    alt="СтройДвор"
+            <button
+                type="button"
+                id="sidebar-toggle"
+                class="sidebar-toggle"
+                aria-label="Открыть меню"
+                title="Меню"
+            >
+                <svg
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
                 >
-            </div>
+                    <path
+                        d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"
+                    />
+                </svg>
+            </button>
 
-            <div class="brand-text">
 
-                <span class="brand-name">
-                    SD.OS
-                </span>
+            <div class="brand">
 
-                <span class="brand-version">
-                    v{{ app_version }}
-                </span>
+                <div class="brand-mark">
+                    <img
+                        src="/static/img/stroydvor.png"
+                        alt="СтройДвор"
+                    >
+                </div>
+
+                <div class="brand-text">
+
+                    <span class="brand-name">
+                        SD.OS
+                    </span>
+
+                    <span class="brand-version">
+                        v{{ app_version }}
+                    </span>
+
+                </div>
 
             </div>
 
@@ -66,6 +92,7 @@
             >
                 {{ user.fio }}
             </div>
+
 
             {% if can_access_admin %}
 
@@ -127,93 +154,239 @@
     </header>
 
 
-    <main class="chat">
+    <!-- =====================================================
+         WORKSPACE
+    ====================================================== -->
 
-        <section
-            id="welcome"
-            class="welcome"
+    <div class="workspace">
+
+        <!-- =================================================
+             SIDEBAR
+        ================================================== -->
+
+        <aside
+            id="sidebar"
+            class="sidebar"
         >
 
-            <div class="welcome-logo">
-                <img
-                    src="/static/img/stroydvor.png"
-                    alt="СтройДвор"
+            <nav class="sidebar-nav">
+
+                <!-- AI -->
+
+                <a
+                    href="/"
+                    class="sidebar-item active"
+                    title="ИИ"
                 >
+                    <span class="sidebar-item-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M12 2a7 7 0 0 0-7 7v1.28A4 4 0 0 0 6 18h1v3a1 1 0 0 0 1.55.83L13.65 18H17a4 4 0 0 0 2-7.46V9a7 7 0 0 0-7-7Zm5 14h-4.02L9 18.99V16H6a2 2 0 0 1-.5-3.94L7 11.67V9a5 5 0 0 1 10 0v2.79l1.11.55A2 2 0 0 1 17 16Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        ИИ
+                    </span>
+                </a>
+
+
+                <!-- DIRECTORY -->
+
+                <div
+                    class="sidebar-item disabled"
+                    title="Корпоративный справочник будет подключён позже"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm0 2h14v14H5V5Zm3 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm6-1v2h3V8h-3Zm0 4v2h3v-2h-3ZM7 15c-1.67 0-3 1.33-3 3h2c0-.56.44-1 1-1h2c.56 0 1 .44 1 1h2c0-1.67-1.33-3-3-3H7Zm7 1v2h3v-2h-3Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Справочник
+                    </span>
+                </div>
+
+
+                <!-- SD CHAT -->
+
+                {% if can_use_sd_chat %}
+
+                    <a
+                        href="/sd-chat"
+                        class="sidebar-item"
+                        title="Сообщения"
+                    >
+                        <span class="sidebar-item-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M21.8 2.2a1 1 0 0 0-1.05-.23L2.62 9.09a1 1 0 0 0 .06 1.88l7.12 2.37 2.37 7.12a1 1 0 0 0 .93.68h.03a1 1 0 0 0 .92-.62l7.96-17.25a1 1 0 0 0-.21-1.07ZM5.92 10.1l12.37-4.86-7.59 6.1-4.78-1.24Zm7.24 7.3-1.52-4.56 6.24-5.02-4.72 9.58Z"
+                                />
+                            </svg>
+
+                        </span>
+
+                        <span class="sidebar-item-text">
+                            Сообщения
+                        </span>
+                    </a>
+
+                {% endif %}
+
+            </nav>
+
+
+            <div class="sidebar-bottom">
+
+                <div class="sidebar-user">
+
+                    <div class="sidebar-user-avatar">
+                        {{ user.fio[:1] | upper }}
+                    </div>
+
+                    <div class="sidebar-user-data">
+
+                        <div
+                            class="sidebar-user-name"
+                            title="{{ user.fio }}"
+                        >
+                            {{ user.fio }}
+                        </div>
+
+                        <div class="sidebar-user-caption">
+                            SD.OS
+                        </div>
+
+                    </div>
+
+                </div>
+
             </div>
 
-            <h1>
-                Цифровое ядро компании
-            </h1>
-
-        </section>
+        </aside>
 
 
-        <section
-            id="messages"
-            class="messages"
-        ></section>
+        <!-- =================================================
+             MOBILE BACKDROP
+        ================================================== -->
+
+        <div
+            id="sidebar-backdrop"
+            class="sidebar-backdrop"
+        ></div>
 
 
-        <div class="composer-wrapper">
+        <!-- =================================================
+             AI CHAT
+        ================================================== -->
 
-            <form
-                id="chat-form"
-                class="composer"
+        <main class="chat">
+
+            <section
+                id="welcome"
+                class="welcome"
             >
 
-                <textarea
-                    id="message-input"
-                    placeholder="Спросите о работе компании..."
-                    rows="1"
-                    maxlength="10000"
-                    autocomplete="off"
-                ></textarea>
-
-
-                <button
-                    type="button"
-                    id="voice-button"
-                    class="icon-button"
-                    aria-label="Голосовой ввод"
-                    title="Голосовой ввод"
-                >
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
+                <div class="welcome-logo">
+                    <img
+                        src="/static/img/stroydvor.png"
+                        alt="СтройДвор"
                     >
-                        <path
-                            d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21H8v2h8v-2h-3v-3.08A7 7 0 0 0 19 11h-2Z"
-                        />
-                    </svg>
-                </button>
+                </div>
+
+                <h1>
+                    Цифровое ядро компании
+                </h1>
+
+            </section>
 
 
-                <button
-                    type="submit"
-                    id="send-button"
-                    class="send-button"
-                    aria-label="Отправить"
+            <section
+                id="messages"
+                class="messages"
+            ></section>
+
+
+            <div class="composer-wrapper">
+
+                <form
+                    id="chat-form"
+                    class="composer"
                 >
-                    <svg
-                        viewBox="0 0 24 24"
-                        aria-hidden="true"
+
+                    <textarea
+                        id="message-input"
+                        placeholder="Спросите о работе компании..."
+                        rows="1"
+                        maxlength="10000"
+                        autocomplete="off"
+                    ></textarea>
+
+
+                    <button
+                        type="button"
+                        id="voice-button"
+                        class="icon-button"
+                        aria-label="Голосовой ввод"
+                        title="Голосовой ввод"
                     >
-                        <path
-                            d="M3 20.5 21 12 3 3.5v6.6l12 1.9-12 1.9v6.6Z"
-                        />
-                    </svg>
-                </button>
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21H8v2h8v-2h-3v-3.08A7 7 0 0 0 19 11h-2Z"
+                            />
+                        </svg>
+                    </button>
 
-            </form>
+
+                    <button
+                        type="submit"
+                        id="send-button"
+                        class="send-button"
+                        aria-label="Отправить"
+                    >
+                        <svg
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path
+                                d="M3 20.5 21 12 3 3.5v6.6l12 1.9-12 1.9v6.6Z"
+                            />
+                        </svg>
+                    </button>
+
+                </form>
 
 
-            <div class="composer-hint">
-                SD.OS может ошибаться. Важные решения требуют проверки.
+                <div class="composer-hint">
+                    SD.OS может ошибаться. Важные решения требуют проверки.
+                </div>
+
             </div>
 
-        </div>
+        </main>
 
-    </main>
+    </div>
 
 </div>
 
@@ -225,12 +398,16 @@
 
 <script>
     (() => {
-        const toggle = document.getElementById("theme-toggle");
-        const icon = document.getElementById("theme-icon");
+        const toggle =
+            document.getElementById("theme-toggle");
+
+        const icon =
+            document.getElementById("theme-icon");
 
         function updateThemeIcon() {
             const theme =
-                document.documentElement.dataset.theme || "dark";
+                document.documentElement.dataset.theme
+                || "dark";
 
             icon.textContent =
                 theme === "dark"
@@ -240,30 +417,37 @@
 
         updateThemeIcon();
 
-        toggle.addEventListener("click", () => {
-            const currentTheme =
-                document.documentElement.dataset.theme || "dark";
+        toggle.addEventListener(
+            "click",
+            () => {
+                const currentTheme =
+                    document.documentElement.dataset.theme
+                    || "dark";
 
-            const nextTheme =
-                currentTheme === "dark"
-                    ? "light"
-                    : "dark";
+                const nextTheme =
+                    currentTheme === "dark"
+                        ? "light"
+                        : "dark";
 
-            document.documentElement.dataset.theme = nextTheme;
+                document.documentElement.dataset.theme =
+                    nextTheme;
 
-            localStorage.setItem(
-                "sdos-theme",
-                nextTheme
-            );
+                localStorage.setItem(
+                    "sdos-theme",
+                    nextTheme
+                );
 
-            updateThemeIcon();
-        });
+                updateThemeIcon();
+            }
+        );
     })();
 
 
     (() => {
         const logoutButton =
-            document.getElementById("logout-button");
+            document.getElementById(
+                "logout-button"
+            );
 
         logoutButton.addEventListener(
             "click",
@@ -283,10 +467,88 @@
                         return;
                     }
 
-                    window.location.href = "/login";
+                    window.location.href =
+                        "/login";
 
                 } catch (error) {
                     logoutButton.disabled = false;
+                }
+            }
+        );
+    })();
+
+
+    (() => {
+        const sidebar =
+            document.getElementById(
+                "sidebar"
+            );
+
+        const toggle =
+            document.getElementById(
+                "sidebar-toggle"
+            );
+
+        const backdrop =
+            document.getElementById(
+                "sidebar-backdrop"
+            );
+
+        function openSidebar() {
+            sidebar.classList.add(
+                "mobile-open"
+            );
+
+            backdrop.classList.add(
+                "visible"
+            );
+
+            document.body.classList.add(
+                "sidebar-mobile-open"
+            );
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove(
+                "mobile-open"
+            );
+
+            backdrop.classList.remove(
+                "visible"
+            );
+
+            document.body.classList.remove(
+                "sidebar-mobile-open"
+            );
+        }
+
+        toggle.addEventListener(
+            "click",
+            () => {
+                if (
+                    sidebar.classList.contains(
+                        "mobile-open"
+                    )
+                ) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            }
+        );
+
+        backdrop.addEventListener(
+            "click",
+            closeSidebar
+        );
+
+        window.addEventListener(
+            "resize",
+            () => {
+                if (
+                    window.innerWidth > 800
+                ) {
+                    closeSidebar();
                 }
             }
         );

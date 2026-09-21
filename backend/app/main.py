@@ -9,8 +9,8 @@ from fastapi.responses import (
 )
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import select
 
+from backend.app.api import sd_chat
 from backend.app.api.admin import (
     router as admin_router,
 )
@@ -40,11 +40,10 @@ from backend.app.core.config import (
 from backend.app.core.database import (
     AsyncSessionLocal,
 )
-from backend.app.models.role import (
-    Role,
-    UserRole,
-)
 from backend.app.models.user import User
+from backend.app.services.permission_service import (
+    permission_service,
+)
 
 
 app = FastAPI(
@@ -73,6 +72,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(invite_router)
 app.include_router(password_reset_router)
+app.include_router(sd_chat.router)
 
 
 @app.get(
@@ -93,24 +93,23 @@ async def index(
         )
 
     async with AsyncSessionLocal() as db:
-        roles_result = await db.execute(
-            select(Role.code)
-            .join(
-                UserRole,
-                UserRole.role_id == Role.id,
-            )
-            .where(
-                UserRole.user_id == user.id
+        can_access_admin = (
+            await permission_service
+            .has_permission(
+                db=db,
+                user_id=user.id,
+                permission_code="users.view",
             )
         )
 
-        role_codes = set(
-            roles_result.scalars().all()
+        can_use_sd_chat = (
+            await permission_service
+            .has_permission(
+                db=db,
+                user_id=user.id,
+                permission_code="chat.use",
+            )
         )
-
-    can_access_admin = (
-        "admin" in role_codes
-    )
 
     return templates.TemplateResponse(
         request=request,
@@ -119,7 +118,12 @@ async def index(
             "app_name": settings.APP_NAME,
             "app_version": settings.APP_VERSION,
             "user": user,
-            "can_access_admin": can_access_admin,
+            "can_access_admin": (
+                can_access_admin
+            ),
+            "can_use_sd_chat": (
+                can_use_sd_chat
+            ),
         },
     )
 

@@ -19,6 +19,14 @@ from backend.app.models.permission import (
 )
 from backend.app.models.audit_log import AuditLog
 
+from backend.app.models.sd_chat import (
+    ChatAnnouncement,
+    ChatAnnouncementRecipient,
+    ChatConversation,
+    ChatMessage,
+    ChatParticipant,
+)
+
 
 
 config = context.config
