@@ -2172,3 +2172,36 @@ a {
     }
 
 }
+
+
+/* =========================================================
+   SD CHAT UNREAD BADGE
+========================================================= */
+
+.sidebar-item-badge {
+    min-width: 18px;
+    height: 18px;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    margin-left: auto;
+
+    padding:
+        0
+        5px;
+
+    border-radius: 9px;
+
+    background:
+        var(--accent);
+
+    color: #ffffff;
+
+    font-size: 9px;
+    font-weight: 600;
+    line-height: 1;
+
+    flex-shrink: 0;
+}

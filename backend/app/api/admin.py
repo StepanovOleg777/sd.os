@@ -33,6 +33,11 @@ from backend.app.core.permissions import (
 from backend.app.models.audit_log import AuditLog
 from backend.app.models.department import Department
 from backend.app.models.invite import Invite
+from backend.app.models.permission import (
+    Permission,
+    RolePermission,
+    UserPermission,
+)
 from backend.app.models.role import (
     Role,
     UserRole,
@@ -93,6 +98,12 @@ ROLES_REQUIRING_DEPARTMENT = {
 PROTECTED_ROLE_CODES = {
     "director",
     "developer",
+}
+
+
+MESSENGER_PERMISSION_CODES = {
+    "chat.use",
+    "chat.message.send",
 }
 
 
@@ -166,7 +177,8 @@ async def get_user_role_ids(
     user_id: int,
 ) -> set[int]:
     result = await db.execute(
-        select(UserRole.role_id).where(
+        select(UserRole.role_id)
+        .where(
             UserRole.user_id == user_id
         )
     )
@@ -210,7 +222,8 @@ async def get_department_by_id(
         return None
 
     result = await db.execute(
-        select(Department).where(
+        select(Department)
+        .where(
             Department.id == department_id
         )
     )
@@ -223,7 +236,8 @@ async def get_user_by_id(
     user_id: int,
 ) -> User | None:
     result = await db.execute(
-        select(User).where(
+        select(User)
+        .where(
             User.id == user_id
         )
     )
@@ -311,17 +325,21 @@ async def ensure_scoped_access(
     target_user_id: int | None = None,
     target_department_id: int | None = None,
 ) -> None:
-    allowed = await permission_service.can_access(
-        db=db,
-        user_id=actor.id,
-        permission_code=permission_code,
-        target_user_id=target_user_id,
-        target_department_id=target_department_id,
+    allowed = (
+        await permission_service.can_access(
+            db=db,
+            user_id=actor.id,
+            permission_code=permission_code,
+            target_user_id=target_user_id,
+            target_department_id=target_department_id,
+        )
     )
 
     if not allowed:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=(
+                status.HTTP_403_FORBIDDEN
+            ),
             detail="Недостаточно прав.",
         )
 
@@ -330,11 +348,244 @@ async def actor_can_manage_roles(
     db,
     actor: User,
 ) -> bool:
-    return await permission_service.has_permission(
-        db=db,
-        user_id=actor.id,
-        permission_code="users.roles.manage",
+    return (
+        await permission_service
+        .has_permission(
+            db=db,
+            user_id=actor.id,
+            permission_code=(
+                "users.roles.manage"
+            ),
+        )
     )
+
+
+# =========================================================
+# MESSENGER ACCESS
+# =========================================================
+
+
+async def get_messenger_permissions(
+    db,
+) -> dict[str, Permission]:
+    result = await db.execute(
+        select(Permission)
+        .where(
+            Permission.code.in_(
+                MESSENGER_PERMISSION_CODES
+            )
+        )
+    )
+
+    permissions = list(
+        result.scalars().all()
+    )
+
+    by_code = {
+        permission.code: permission
+        for permission in permissions
+    }
+
+    missing = (
+        MESSENGER_PERMISSION_CODES
+        - set(by_code.keys())
+    )
+
+    if missing:
+        raise RuntimeError(
+            "В таблице permissions отсутствуют "
+            "разрешения: "
+            + ", ".join(
+                sorted(missing)
+            )
+        )
+
+    return by_code
+
+
+async def get_personal_messenger_access(
+    db,
+    user_id: int,
+) -> bool:
+    result = await db.execute(
+        select(Permission.code)
+        .join(
+            UserPermission,
+            UserPermission.permission_id
+            == Permission.id,
+        )
+        .where(
+            UserPermission.user_id
+            == user_id,
+            Permission.code.in_(
+                MESSENGER_PERMISSION_CODES
+            ),
+        )
+    )
+
+    granted_codes = set(
+        result.scalars().all()
+    )
+
+    return (
+        MESSENGER_PERMISSION_CODES
+        .issubset(
+            granted_codes
+        )
+    )
+
+
+async def get_role_messenger_access(
+    db,
+    user_id: int,
+) -> bool:
+    result = await db.execute(
+        select(
+            Permission.code
+        )
+        .join(
+            RolePermission,
+            RolePermission.permission_id
+            == Permission.id,
+        )
+        .join(
+            UserRole,
+            UserRole.role_id
+            == RolePermission.role_id,
+        )
+        .where(
+            UserRole.user_id
+            == user_id,
+            Permission.code.in_(
+                MESSENGER_PERMISSION_CODES
+            ),
+        )
+        .distinct()
+    )
+
+    granted_codes = set(
+        result.scalars().all()
+    )
+
+    return (
+        MESSENGER_PERMISSION_CODES
+        .issubset(
+            granted_codes
+        )
+    )
+
+
+async def get_effective_messenger_access(
+    db,
+    user_id: int,
+) -> bool:
+    can_use = (
+        await permission_service
+        .has_permission(
+            db=db,
+            user_id=user_id,
+            permission_code="chat.use",
+        )
+    )
+
+    can_send = (
+        await permission_service
+        .has_permission(
+            db=db,
+            user_id=user_id,
+            permission_code=(
+                "chat.message.send"
+            ),
+        )
+    )
+
+    return (
+        can_use
+        and can_send
+    )
+
+
+async def set_personal_messenger_access(
+    db,
+    *,
+    user_id: int,
+    enabled: bool,
+) -> None:
+    permissions = (
+        await get_messenger_permissions(
+            db
+        )
+    )
+
+    permission_ids = {
+        permission.id
+        for permission
+        in permissions.values()
+    }
+
+    await db.execute(
+        delete(UserPermission)
+        .where(
+            UserPermission.user_id
+            == user_id,
+            UserPermission.permission_id.in_(
+                permission_ids
+            ),
+        )
+    )
+
+    await db.flush()
+
+    if enabled:
+        for permission in permissions.values():
+            db.add(
+                UserPermission(
+                    user_id=user_id,
+                    permission_id=(
+                        permission.id
+                    ),
+                    scope_type="all",
+                )
+            )
+
+    await db.flush()
+
+
+async def get_messenger_access_state(
+    db,
+    user_id: int,
+) -> dict:
+    personal = (
+        await get_personal_messenger_access(
+            db,
+            user_id,
+        )
+    )
+
+    by_role = (
+        await get_role_messenger_access(
+            db,
+            user_id,
+        )
+    )
+
+    effective = (
+        await get_effective_messenger_access(
+            db,
+            user_id,
+        )
+    )
+
+    return {
+        "personal": personal,
+        "by_role": by_role,
+        "effective": effective,
+    }
+
+
+# =========================================================
+# ROLES
+# =========================================================
 
 
 async def get_roles_available_for_actor(
@@ -345,9 +596,11 @@ async def get_roles_available_for_actor(
         db
     )
 
-    actor_role_codes = await get_role_codes(
-        db,
-        actor.id,
+    actor_role_codes = (
+        await get_role_codes(
+            db,
+            actor.id,
+        )
     )
 
     if "director" in actor_role_codes:
@@ -386,9 +639,11 @@ async def validate_role_assignment(
         for role in selected_roles
     }
 
-    actor_role_codes = await get_role_codes(
-        db,
-        actor.id,
+    actor_role_codes = (
+        await get_role_codes(
+            db,
+            actor.id,
+        )
     )
 
     if "director" in actor_role_codes:
@@ -416,7 +671,10 @@ async def validate_role_assignment(
     if can_manage_roles:
         return None
 
-    if selected_role_codes != current_role_codes:
+    if (
+        selected_role_codes
+        != current_role_codes
+    ):
         return (
             "У вас нет права изменять роли "
             "пользователя."
@@ -435,15 +693,20 @@ async def validate_new_user_roles(
         for role in selected_roles
     }
 
-    actor_role_codes = await get_role_codes(
-        db,
-        actor.id,
+    actor_role_codes = (
+        await get_role_codes(
+            db,
+            actor.id,
+        )
     )
 
     if "director" in actor_role_codes:
         return None
 
-    if selected_codes & PROTECTED_ROLE_CODES:
+    if (
+        selected_codes
+        & PROTECTED_ROLE_CODES
+    ):
         return (
             "Назначать роли «Руководитель» "
             "и «Разработчик» может только "
@@ -469,13 +732,20 @@ async def validate_new_user_roles(
     return None
 
 
+# =========================================================
+# DEPARTMENT SCOPES
+# =========================================================
+
+
 async def get_departments_available_for_actor(
     db,
     actor: User,
 ) -> list[Department]:
-    all_departments = await get_departments(
-        db,
-        active_only=True,
+    all_departments = (
+        await get_departments(
+            db,
+            active_only=True,
+        )
     )
 
     grants = (
@@ -515,7 +785,10 @@ async def get_departments_available_for_actor(
     allowed_department_ids: set[int] = set()
 
     for grant in grants:
-        if grant.scope_type != "selected_departments":
+        if (
+            grant.scope_type
+            != "selected_departments"
+        ):
             continue
 
         for (
@@ -539,9 +812,11 @@ async def get_edit_departments_for_actor(
     db,
     actor: User,
 ) -> list[Department]:
-    all_departments = await get_departments(
-        db,
-        active_only=False,
+    all_departments = (
+        await get_departments(
+            db,
+            active_only=False,
+        )
     )
 
     grants = (
@@ -581,7 +856,10 @@ async def get_edit_departments_for_actor(
     allowed_department_ids: set[int] = set()
 
     for grant in grants:
-        if grant.scope_type != "selected_departments":
+        if (
+            grant.scope_type
+            != "selected_departments"
+        ):
             continue
 
         for (
@@ -601,11 +879,18 @@ async def get_edit_departments_for_actor(
     ]
 
 
+# =========================================================
+# AUDIT HELPERS
+# =========================================================
+
+
 def build_user_audit_state(
     user: User,
     role_codes: set[str],
+    *,
+    messenger_access: bool | None = None,
 ) -> dict:
-    return {
+    state = {
         "fio": user.fio,
         "email": user.email,
         "username": user.username,
@@ -616,6 +901,13 @@ def build_user_audit_state(
             role_codes
         ),
     }
+
+    if messenger_access is not None:
+        state[
+            "messenger_access"
+        ] = messenger_access
+
+    return state
 
 
 def get_status_label(
@@ -644,13 +936,17 @@ async def get_department_name(
     if department_id is None:
         return "Без отдела"
 
-    department = await get_department_by_id(
-        db,
-        department_id,
+    department = (
+        await get_department_by_id(
+            db,
+            department_id,
+        )
     )
 
     if department is None:
-        return f"Отдел #{department_id}"
+        return (
+            f"Отдел #{department_id}"
+        )
 
     return department.name
 
@@ -663,7 +959,8 @@ async def get_role_names_by_codes(
         return "Без ролей"
 
     result = await db.execute(
-        select(Role).where(
+        select(Role)
+        .where(
             Role.code.in_(
                 role_codes
             )
@@ -707,12 +1004,16 @@ async def build_audit_diff(
     )
 
     for key in sorted(all_keys):
-        before_value = before_data.get(
-            key
+        before_value = (
+            before_data.get(
+                key
+            )
         )
 
-        after_value = after_data.get(
-            key
+        after_value = (
+            after_data.get(
+                key
+            )
         )
 
         if before_value == after_value:
@@ -751,6 +1052,23 @@ async def build_audit_diff(
             )
 
             label = "Роли"
+
+        elif key == "messenger_access":
+            before_text = (
+                "Да"
+                if before_value
+                else "Нет"
+            )
+
+            after_text = (
+                "Да"
+                if after_value
+                else "Нет"
+            )
+
+            label = (
+                "Доступ к мессенджеру"
+            )
 
         elif key == "status":
             before_text = (
@@ -894,17 +1212,23 @@ async def get_users_data(
                 .can_access(
                     db=db,
                     user_id=actor.id,
-                    permission_code="users.view",
-                    target_user_id=user.id,
+                    permission_code=(
+                        "users.view"
+                    ),
+                    target_user_id=(
+                        user.id
+                    ),
                 )
             )
 
             if not can_view:
                 continue
 
-            roles = await get_user_roles(
-                db,
-                user.id,
+            roles = (
+                await get_user_roles(
+                    db,
+                    user.id,
+                )
             )
 
             department = (
@@ -914,11 +1238,21 @@ async def get_users_data(
                 )
             )
 
+            messenger_access = (
+                await get_effective_messenger_access(
+                    db,
+                    user.id,
+                )
+            )
+
             users_data.append(
                 {
                     "user": user,
                     "roles": roles,
                     "department": department,
+                    "messenger_access": (
+                        messenger_access
+                    ),
                 }
             )
 
@@ -928,20 +1262,25 @@ async def get_users_data(
 async def get_departments_data(
     db,
 ) -> list[dict]:
-    departments = await get_departments(
-        db,
-        active_only=False,
+    departments = (
+        await get_departments(
+            db,
+            active_only=False,
+        )
     )
 
     departments_data = []
 
     for department in departments:
-        total_users_result = await db.execute(
-            select(
-                func.count(User.id)
-            ).where(
-                User.department_id
-                == department.id
+        total_users_result = (
+            await db.execute(
+                select(
+                    func.count(User.id)
+                )
+                .where(
+                    User.department_id
+                    == department.id
+                )
             )
         )
 
@@ -949,18 +1288,21 @@ async def get_departments_data(
             total_users_result.scalar_one()
         )
 
-        active_users_result = await db.execute(
-            select(
-                func.count(User.id)
-            ).where(
-                User.department_id
-                == department.id,
-                User.status.in_(
-                    [
-                        "active",
-                        "invited",
-                    ]
-                ),
+        active_users_result = (
+            await db.execute(
+                select(
+                    func.count(User.id)
+                )
+                .where(
+                    User.department_id
+                    == department.id,
+                    User.status.in_(
+                        [
+                            "active",
+                            "invited",
+                        ]
+                    ),
+                )
             )
         )
 
@@ -1053,6 +1395,11 @@ async def users_page(
     )
 
 
+# =========================================================
+# CREATE USER
+# =========================================================
+
+
 @router.get(
     "/users/new",
     response_class=HTMLResponse,
@@ -1088,6 +1435,7 @@ async def user_create_page(
             "admin": actor,
             "roles": roles,
             "departments": departments,
+            "messenger_access": True,
             "error": None,
             "invite_url": None,
             "created_user": None,
@@ -1108,6 +1456,7 @@ async def user_create(
     email: str = Form(...),
     roles: list[str] = Form(...),
     department_id: str = Form(""),
+    messenger_access: str | None = Form(None),
     actor: User = Depends(
         require_permission(
             "users.invite"
@@ -1116,6 +1465,10 @@ async def user_create(
 ):
     fio = fio.strip()
     email = email.strip().lower()
+
+    requested_messenger_access = (
+        messenger_access is not None
+    )
 
     parsed_department_id = (
         parse_department_id(
@@ -1142,6 +1495,9 @@ async def user_create(
             "admin": actor,
             "roles": available_roles,
             "departments": departments,
+            "messenger_access": (
+                requested_messenger_access
+            ),
             "invite_url": None,
             "created_user": None,
             "email_sent": False,
@@ -1170,14 +1526,18 @@ async def user_create(
                 status_code=400,
             )
 
-        existing_result = await db.execute(
-            select(User).where(
-                User.email == email
+        existing_result = (
+            await db.execute(
+                select(User)
+                .where(
+                    User.email == email
+                )
             )
         )
 
         existing_user = (
-            existing_result.scalar_one_or_none()
+            existing_result
+            .scalar_one_or_none()
         )
 
         if existing_user is not None:
@@ -1194,16 +1554,21 @@ async def user_create(
                 status_code=400,
             )
 
-        selected_roles_result = await db.execute(
-            select(Role).where(
-                Role.code.in_(
-                    roles
+        selected_roles_result = (
+            await db.execute(
+                select(Role)
+                .where(
+                    Role.code.in_(
+                        roles
+                    )
                 )
             )
         )
 
         selected_roles = list(
-            selected_roles_result.scalars().all()
+            selected_roles_result
+            .scalars()
+            .all()
         )
 
         if not selected_roles:
@@ -1229,8 +1594,11 @@ async def user_create(
             for role in selected_roles
         }
 
-        if not selected_role_codes.issubset(
-            available_role_codes
+        if not (
+            selected_role_codes
+            .issubset(
+                available_role_codes
+            )
         ):
             return templates.TemplateResponse(
                 request=request,
@@ -1271,12 +1639,13 @@ async def user_create(
             )
         )
 
-        department, department_error = (
-            await validate_department(
-                db,
-                parsed_department_id,
-                department_required,
-            )
+        (
+            department,
+            department_error,
+        ) = await validate_department(
+            db,
+            parsed_department_id,
+            department_required,
         )
 
         if department_error:
@@ -1285,7 +1654,9 @@ async def user_create(
                 name="admin/user_create.html",
                 context={
                     **base_context,
-                    "error": department_error,
+                    "error": (
+                        department_error
+                    ),
                 },
                 status_code=400,
             )
@@ -1328,6 +1699,25 @@ async def user_create(
                 )
             )
 
+        await db.flush()
+
+        await set_personal_messenger_access(
+            db,
+            user_id=user.id,
+            enabled=(
+                requested_messenger_access
+            ),
+        )
+
+        await db.flush()
+
+        effective_messenger_access = (
+            await get_effective_messenger_access(
+                db,
+                user.id,
+            )
+        )
+
         invite, raw_token = (
             await invite_service.create_invite(
                 db=db,
@@ -1347,6 +1737,9 @@ async def user_create(
                 build_user_audit_state(
                     user,
                     selected_role_codes,
+                    messenger_access=(
+                        effective_messenger_access
+                    ),
                 )
             ),
             request=request,
@@ -1374,7 +1767,8 @@ async def user_create(
         except EmailServiceError:
             email_error = (
                 "Пользователь создан, "
-                "но письмо отправить не удалось."
+                "но письмо отправить "
+                "не удалось."
             )
 
     return templates.TemplateResponse(
@@ -1384,6 +1778,9 @@ async def user_create(
             "admin": actor,
             "roles": available_roles,
             "departments": departments,
+            "messenger_access": (
+                requested_messenger_access
+            ),
             "error": None,
             "invite_url": invite_url,
             "created_user": user,
@@ -1392,6 +1789,11 @@ async def user_create(
             "email_error": email_error,
         },
     )
+
+
+# =========================================================
+# EDIT USER
+# =========================================================
 
 
 @router.get(
@@ -1419,7 +1821,9 @@ async def user_edit_page(
                 status_code=(
                     status.HTTP_404_NOT_FOUND
                 ),
-                detail="Пользователь не найден.",
+                detail=(
+                    "Пользователь не найден."
+                ),
             )
 
         await ensure_scoped_access(
@@ -1429,8 +1833,10 @@ async def user_edit_page(
             target_user_id=user.id,
         )
 
-        all_roles = await get_all_roles(
-            db
+        all_roles = (
+            await get_all_roles(
+                db
+            )
         )
 
         actor_role_codes = (
@@ -1447,17 +1853,17 @@ async def user_edit_page(
             )
         )
 
+        current_role_codes = (
+            await get_role_codes(
+                db,
+                user.id,
+            )
+        )
+
         if "director" in actor_role_codes:
             roles = all_roles
 
         elif can_manage_roles:
-            current_role_codes = (
-                await get_role_codes(
-                    db,
-                    user.id,
-                )
-            )
-
             roles = [
                 role
                 for role in all_roles
@@ -1470,9 +1876,11 @@ async def user_edit_page(
             ]
 
         else:
-            roles = await get_user_roles(
-                db,
-                user.id,
+            roles = (
+                await get_user_roles(
+                    db,
+                    user.id,
+                )
             )
 
         selected_role_ids = (
@@ -1489,6 +1897,13 @@ async def user_edit_page(
             )
         )
 
+        messenger_state = (
+            await get_messenger_access_state(
+                db,
+                user.id,
+            )
+        )
+
     return templates.TemplateResponse(
         request=request,
         name="admin/user_edit.html",
@@ -1499,6 +1914,21 @@ async def user_edit_page(
             "departments": departments,
             "selected_role_ids": (
                 selected_role_ids
+            ),
+            "messenger_access": (
+                messenger_state[
+                    "personal"
+                ]
+            ),
+            "messenger_access_by_role": (
+                messenger_state[
+                    "by_role"
+                ]
+            ),
+            "messenger_access_effective": (
+                messenger_state[
+                    "effective"
+                ]
             ),
             "error": None,
             "action_success": None,
@@ -1520,6 +1950,7 @@ async def user_edit(
     email: str = Form(...),
     roles: list[str] = Form(...),
     department_id: str = Form(""),
+    messenger_access: str | None = Form(None),
     account_status: str = Form(...),
     actor: User = Depends(
         require_permission(
@@ -1529,6 +1960,10 @@ async def user_edit(
 ):
     fio = fio.strip()
     email = email.strip().lower()
+
+    requested_messenger_access = (
+        messenger_access is not None
+    )
 
     parsed_department_id = (
         parse_department_id(
@@ -1547,7 +1982,9 @@ async def user_edit(
                 status_code=(
                     status.HTTP_404_NOT_FOUND
                 ),
-                detail="Пользователь не найден.",
+                detail=(
+                    "Пользователь не найден."
+                ),
             )
 
         await ensure_scoped_access(
@@ -1564,13 +2001,27 @@ async def user_edit(
             )
         )
 
-        before_data = build_user_audit_state(
-            user,
-            current_role_codes,
+        before_messenger_access = (
+            await get_effective_messenger_access(
+                db,
+                user.id,
+            )
         )
 
-        all_roles = await get_all_roles(
-            db
+        before_data = (
+            build_user_audit_state(
+                user,
+                current_role_codes,
+                messenger_access=(
+                    before_messenger_access
+                ),
+            )
+        )
+
+        all_roles = (
+            await get_all_roles(
+                db
+            )
         )
 
         actor_role_codes = (
@@ -1603,9 +2054,11 @@ async def user_edit(
             ]
 
         else:
-            visible_roles = await get_user_roles(
-                db,
-                user.id,
+            visible_roles = (
+                await get_user_roles(
+                    db,
+                    user.id,
+                )
             )
 
         departments = (
@@ -1626,23 +2079,49 @@ async def user_edit(
                 )
             )
 
-            return templates.TemplateResponse(
-                request=request,
-                name="admin/user_edit.html",
-                context={
-                    "admin": actor,
-                    "edited_user": user,
-                    "roles": visible_roles,
-                    "departments": departments,
-                    "selected_role_ids": (
-                        selected_role_ids
+            messenger_state = (
+                await get_messenger_access_state(
+                    db,
+                    user.id,
+                )
+            )
+
+            return (
+                templates.TemplateResponse(
+                    request=request,
+                    name=(
+                        "admin/user_edit.html"
                     ),
-                    "error": message,
-                    "action_success": None,
-                    "action_error": None,
-                    "invite_url": None,
-                },
-                status_code=status_code_value,
+                    context={
+                        "admin": actor,
+                        "edited_user": user,
+                        "roles": visible_roles,
+                        "departments": departments,
+                        "selected_role_ids": (
+                            selected_role_ids
+                        ),
+                        "messenger_access": (
+                            requested_messenger_access
+                        ),
+                        "messenger_access_by_role": (
+                            messenger_state[
+                                "by_role"
+                            ]
+                        ),
+                        "messenger_access_effective": (
+                            messenger_state[
+                                "effective"
+                            ]
+                        ),
+                        "error": message,
+                        "action_success": None,
+                        "action_error": None,
+                        "invite_url": None,
+                    },
+                    status_code=(
+                        status_code_value
+                    ),
+                )
             )
 
         if not fio or not email:
@@ -1655,7 +2134,8 @@ async def user_edit(
                 return await render_edit_error(
                     "Статус приглашённого "
                     "пользователя изменяется "
-                    "автоматически после активации."
+                    "автоматически после "
+                    "активации."
                 )
 
         else:
@@ -1665,7 +2145,10 @@ async def user_edit(
                 "dismissed",
             }
 
-            if account_status not in allowed_statuses:
+            if (
+                account_status
+                not in allowed_statuses
+            ):
                 return await render_edit_error(
                     "Недопустимый статус."
                 )
@@ -1684,15 +2167,19 @@ async def user_edit(
                 "учётную запись."
             )
 
-        duplicate_result = await db.execute(
-            select(User).where(
-                User.email == email,
-                User.id != user.id,
+        duplicate_result = (
+            await db.execute(
+                select(User)
+                .where(
+                    User.email == email,
+                    User.id != user.id,
+                )
             )
         )
 
         duplicate_user = (
-            duplicate_result.scalar_one_or_none()
+            duplicate_result
+            .scalar_one_or_none()
         )
 
         if duplicate_user is not None:
@@ -1701,16 +2188,21 @@ async def user_edit(
                 "другим пользователем."
             )
 
-        selected_roles_result = await db.execute(
-            select(Role).where(
-                Role.code.in_(
-                    roles
+        selected_roles_result = (
+            await db.execute(
+                select(Role)
+                .where(
+                    Role.code.in_(
+                        roles
+                    )
                 )
             )
         )
 
         selected_roles = list(
-            selected_roles_result.scalars().all()
+            selected_roles_result
+            .scalars()
+            .all()
         )
 
         if not selected_roles:
@@ -1740,12 +2232,13 @@ async def user_edit(
             )
         )
 
-        department, department_error = (
-            await validate_department(
-                db,
-                parsed_department_id,
-                department_required,
-            )
+        (
+            department,
+            department_error,
+        ) = await validate_department(
+            db,
+            parsed_department_id,
+            department_required,
         )
 
         if department_error:
@@ -1759,7 +2252,9 @@ async def user_edit(
                 .can_access(
                     db=db,
                     user_id=actor.id,
-                    permission_code="users.edit",
+                    permission_code=(
+                        "users.edit"
+                    ),
                     target_department_id=(
                         department.id
                     ),
@@ -1787,7 +2282,9 @@ async def user_edit(
         )
 
         if user.status != "invited":
-            user.status = account_status
+            user.status = (
+                account_status
+            )
 
         user.is_active = (
             user.status
@@ -1799,8 +2296,10 @@ async def user_edit(
 
         existing_user_roles_result = (
             await db.execute(
-                select(UserRole).where(
-                    UserRole.user_id == user.id
+                select(UserRole)
+                .where(
+                    UserRole.user_id
+                    == user.id
                 )
             )
         )
@@ -1826,9 +2325,33 @@ async def user_edit(
                 )
             )
 
-        after_data = build_user_audit_state(
-            user,
-            selected_role_codes,
+        await db.flush()
+
+        await set_personal_messenger_access(
+            db,
+            user_id=user.id,
+            enabled=(
+                requested_messenger_access
+            ),
+        )
+
+        await db.flush()
+
+        after_messenger_access = (
+            await get_effective_messenger_access(
+                db,
+                user.id,
+            )
+        )
+
+        after_data = (
+            build_user_audit_state(
+                user,
+                selected_role_codes,
+                messenger_access=(
+                    after_messenger_access
+                ),
+            )
         )
 
         await audit_service.write(
@@ -1849,6 +2372,11 @@ async def user_edit(
         url="/admin/users",
         status_code=303,
     )
+
+
+# =========================================================
+# INVITES
+# =========================================================
 
 
 @router.post(
@@ -1876,7 +2404,9 @@ async def resend_invite(
                 status_code=(
                     status.HTTP_404_NOT_FOUND
                 ),
-                detail="Пользователь не найден.",
+                detail=(
+                    "Пользователь не найден."
+                ),
             )
 
         await ensure_scoped_access(
@@ -1890,9 +2420,10 @@ async def resend_invite(
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "Повторное приглашение можно "
-                    "отправить только пользователю "
-                    "со статусом «Приглашён»."
+                    "Повторное приглашение "
+                    "можно отправить только "
+                    "пользователю со статусом "
+                    "«Приглашён»."
                 ),
             )
 
@@ -1906,13 +2437,16 @@ async def resend_invite(
             )
 
         await db.execute(
-            delete(Invite).where(
-                Invite.user_id == user.id
+            delete(Invite)
+            .where(
+                Invite.user_id
+                == user.id
             )
         )
 
         invite, raw_token = (
-            await invite_service.create_invite(
+            await invite_service
+            .create_invite(
                 db=db,
                 user_id=user.id,
             )
@@ -1974,8 +2508,10 @@ async def resend_invite(
             )
         )
 
-        all_roles = await get_all_roles(
-            db
+        all_roles = (
+            await get_all_roles(
+                db
+            )
         )
 
         if "director" in actor_role_codes:
@@ -1994,9 +2530,11 @@ async def resend_invite(
             ]
 
         else:
-            roles = await get_user_roles(
-                db,
-                user.id,
+            roles = (
+                await get_user_roles(
+                    db,
+                    user.id,
+                )
             )
 
         departments = (
@@ -2008,6 +2546,13 @@ async def resend_invite(
 
         selected_role_ids = (
             await get_user_role_ids(
+                db,
+                user.id,
+            )
+        )
+
+        messenger_state = (
+            await get_messenger_access_state(
                 db,
                 user.id,
             )
@@ -2030,7 +2575,9 @@ async def resend_invite(
             "но письмо отправить не удалось."
         )
 
-        fallback_invite_url = invite_url
+        fallback_invite_url = (
+            invite_url
+        )
 
     return templates.TemplateResponse(
         request=request,
@@ -2043,10 +2590,27 @@ async def resend_invite(
             "selected_role_ids": (
                 selected_role_ids
             ),
+            "messenger_access": (
+                messenger_state[
+                    "personal"
+                ]
+            ),
+            "messenger_access_by_role": (
+                messenger_state[
+                    "by_role"
+                ]
+            ),
+            "messenger_access_effective": (
+                messenger_state[
+                    "effective"
+                ]
+            ),
             "error": None,
             "action_success": action_success,
             "action_error": action_error,
-            "invite_url": fallback_invite_url,
+            "invite_url": (
+                fallback_invite_url
+            ),
         },
     )
 
@@ -2075,7 +2639,9 @@ async def cancel_invite(
                 status_code=(
                     status.HTTP_404_NOT_FOUND
                 ),
-                detail="Пользователь не найден.",
+                detail=(
+                    "Пользователь не найден."
+                ),
             )
 
         await ensure_scoped_access(
@@ -2090,7 +2656,8 @@ async def cancel_invite(
                 status_code=400,
                 detail=(
                     "Отменить можно только "
-                    "неактивированное приглашение."
+                    "неактивированное "
+                    "приглашение."
                 ),
             )
 
@@ -2099,8 +2666,9 @@ async def cancel_invite(
                 status_code=400,
                 detail=(
                     "Учётная запись уже была "
-                    "активирована и не может быть "
-                    "удалена как приглашение."
+                    "активирована и не может "
+                    "быть удалена как "
+                    "приглашение."
                 ),
             )
 
@@ -2108,20 +2676,33 @@ async def cancel_invite(
             raise HTTPException(
                 status_code=400,
                 detail=(
-                    "Нельзя удалить собственную "
-                    "учётную запись."
+                    "Нельзя удалить "
+                    "собственную учётную "
+                    "запись."
                 ),
             )
 
-        role_codes = await get_role_codes(
-            db,
-            user.id,
+        role_codes = (
+            await get_role_codes(
+                db,
+                user.id,
+            )
+        )
+
+        messenger_access = (
+            await get_effective_messenger_access(
+                db,
+                user.id,
+            )
         )
 
         before_data = (
             build_user_audit_state(
                 user,
                 role_codes,
+                messenger_access=(
+                    messenger_access
+                ),
             )
         )
 
@@ -2138,20 +2719,34 @@ async def cancel_invite(
         )
 
         await db.execute(
-            delete(Session).where(
-                Session.user_id == user.id
+            delete(Session)
+            .where(
+                Session.user_id
+                == user.id
             )
         )
 
         await db.execute(
-            delete(Invite).where(
-                Invite.user_id == user.id
+            delete(Invite)
+            .where(
+                Invite.user_id
+                == user.id
             )
         )
 
         await db.execute(
-            delete(UserRole).where(
-                UserRole.user_id == user.id
+            delete(UserRole)
+            .where(
+                UserRole.user_id
+                == user.id
+            )
+        )
+
+        await db.execute(
+            delete(UserPermission)
+            .where(
+                UserPermission.user_id
+                == user.id
             )
         )
 
@@ -2316,12 +2911,18 @@ async def audit_page(
         user_ids: set[int] = set()
 
         for log in logs:
-            if log.actor_user_id is not None:
+            if (
+                log.actor_user_id
+                is not None
+            ):
                 user_ids.add(
                     log.actor_user_id
                 )
 
-            if log.target_user_id is not None:
+            if (
+                log.target_user_id
+                is not None
+            ):
                 user_ids.add(
                     log.target_user_id
                 )
@@ -2329,10 +2930,13 @@ async def audit_page(
         users_by_id = {}
 
         if user_ids:
-            users_result = await db.execute(
-                select(User).where(
-                    User.id.in_(
-                        user_ids
+            users_result = (
+                await db.execute(
+                    select(User)
+                    .where(
+                        User.id.in_(
+                            user_ids
+                        )
                     )
                 )
             )
@@ -2385,16 +2989,20 @@ async def audit_page(
                         users_by_id.get(
                             log.actor_user_id
                         )
-                        if log.actor_user_id
-                        is not None
+                        if (
+                            log.actor_user_id
+                            is not None
+                        )
                         else None
                     ),
                     "target": (
                         users_by_id.get(
                             log.target_user_id
                         )
-                        if log.target_user_id
-                        is not None
+                        if (
+                            log.target_user_id
+                            is not None
+                        )
                         else None
                     ),
                     "before_lines": (
@@ -2546,24 +3154,31 @@ async def department_create(
                     "admin": actor,
                     "departments": departments,
                     "error": (
-                        "Укажите название отдела."
+                        "Укажите название "
+                        "отдела."
                     ),
-                    "can_manage_departments": True,
+                    "can_manage_departments": (
+                        True
+                    ),
                 },
                 status_code=400,
             )
 
-        duplicate_result = await db.execute(
-            select(Department).where(
-                func.lower(
-                    Department.name
+        duplicate_result = (
+            await db.execute(
+                select(Department)
+                .where(
+                    func.lower(
+                        Department.name
+                    )
+                    == name.lower()
                 )
-                == name.lower()
             )
         )
 
         duplicate = (
-            duplicate_result.scalar_one_or_none()
+            duplicate_result
+            .scalar_one_or_none()
         )
 
         if duplicate is not None:
@@ -2580,10 +3195,13 @@ async def department_create(
                     "admin": actor,
                     "departments": departments,
                     "error": (
-                        "Отдел с таким названием "
-                        "уже существует."
+                        "Отдел с таким "
+                        "названием уже "
+                        "существует."
                     ),
-                    "can_manage_departments": True,
+                    "can_manage_departments": (
+                        True
+                    ),
                 },
                 status_code=400,
             )
@@ -2662,19 +3280,23 @@ async def department_rename(
                 detail="Отдел не найден.",
             )
 
-        duplicate_result = await db.execute(
-            select(Department).where(
-                func.lower(
-                    Department.name
+        duplicate_result = (
+            await db.execute(
+                select(Department)
+                .where(
+                    func.lower(
+                        Department.name
+                    )
+                    == name.lower(),
+                    Department.id
+                    != department.id,
                 )
-                == name.lower(),
-                Department.id
-                != department.id,
             )
         )
 
         duplicate = (
-            duplicate_result.scalar_one_or_none()
+            duplicate_result
+            .scalar_one_or_none()
         )
 
         if duplicate is not None:
@@ -2745,18 +3367,21 @@ async def department_toggle(
         )
 
         if department.is_active:
-            users_result = await db.execute(
-                select(
-                    func.count(User.id)
-                ).where(
-                    User.department_id
-                    == department.id,
-                    User.status.in_(
-                        [
-                            "active",
-                            "invited",
-                        ]
-                    ),
+            users_result = (
+                await db.execute(
+                    select(
+                        func.count(User.id)
+                    )
+                    .where(
+                        User.department_id
+                        == department.id,
+                        User.status.in_(
+                            [
+                                "active",
+                                "invited",
+                            ]
+                        ),
+                    )
                 )
             )
 
@@ -2768,20 +3393,26 @@ async def department_toggle(
                 raise HTTPException(
                     status_code=400,
                     detail=(
-                        "Нельзя отключить отдел, "
-                        "пока в нём есть активные "
-                        "или приглашённые пользователи."
+                        "Нельзя отключить "
+                        "отдел, пока в нём есть "
+                        "активные или "
+                        "приглашённые "
+                        "пользователи."
                     ),
                 )
 
-            department.is_active = False
+            department.is_active = (
+                False
+            )
 
             action = (
                 "departments.disable"
             )
 
         else:
-            department.is_active = True
+            department.is_active = (
+                True
+            )
 
             action = (
                 "departments.enable"
@@ -2795,7 +3426,9 @@ async def department_toggle(
             entity_id=department.id,
             before_data={
                 "name": department.name,
-                "is_active": old_is_active,
+                "is_active": (
+                    old_is_active
+                ),
             },
             after_data={
                 "name": department.name,

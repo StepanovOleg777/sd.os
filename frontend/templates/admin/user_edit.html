@@ -33,11 +33,13 @@
         .container {
             width: 100%;
             max-width: 620px;
+
             margin: 0 auto;
         }
 
         .back {
             display: inline-block;
+
             margin-bottom: 24px;
 
             color: #96999f;
@@ -45,7 +47,11 @@
         }
 
         h1 {
-            margin: 0 0 28px;
+            margin:
+                0
+                0
+                28px;
+
             font-size: 26px;
         }
 
@@ -59,6 +65,7 @@
             margin-bottom: 7px;
 
             color: #96999f;
+
             font-size: 13px;
         }
 
@@ -89,7 +96,8 @@
             color: #65686e;
         }
 
-        .roles {
+        .roles,
+        .permissions {
             padding: 15px;
 
             border: 1px solid #2b2d31;
@@ -98,19 +106,87 @@
             background: #17181b;
         }
 
-        .role {
+        .role,
+        .permission {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
 
             gap: 10px;
-
-            margin-bottom: 10px;
 
             color: #f2f2f2;
         }
 
+        .role {
+            margin-bottom: 10px;
+        }
+
         .role:last-child {
             margin-bottom: 0;
+        }
+
+        .role input,
+        .permission input {
+            width: 16px;
+            height: 16px;
+
+            margin-top: 2px;
+
+            flex:
+                0
+                0
+                16px;
+
+            accent-color: #7277ff;
+        }
+
+        .permission-content {
+            min-width: 0;
+        }
+
+        .permission-title {
+            display: block;
+
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        .permission-description {
+            display: block;
+
+            margin-top: 5px;
+
+            color: #777a80;
+
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .permission-role-note {
+            margin-top: 12px;
+
+            padding: 10px 12px;
+
+            border: 1px solid #444734;
+            border-radius: 8px;
+
+            background: #252619;
+            color: #d9d6a5;
+
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .permission-effective {
+            margin-top: 10px;
+
+            color: #96999f;
+
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .permission-effective strong {
+            color: #f2f2f2;
         }
 
         .department-field {
@@ -189,12 +265,19 @@
         }
 
         .invite-actions h2 {
-            margin: 0 0 8px;
+            margin:
+                0
+                0
+                8px;
+
             font-size: 18px;
         }
 
         .invite-actions-note {
-            margin: 0 0 18px;
+            margin:
+                0
+                0
+                18px;
 
             color: #96999f;
 
@@ -269,6 +352,15 @@
 
         .copy-button:hover {
             background: #292b30;
+        }
+
+
+        @media (max-width: 700px) {
+            body {
+                padding:
+                    24px
+                    16px;
+            }
         }
     </style>
 </head>
@@ -348,6 +440,10 @@
         action="/admin/users/{{ edited_user.id }}/edit"
     >
 
+        <!-- =============================================
+             FIO
+        ============================================== -->
+
         <div class="field">
 
             <label
@@ -367,6 +463,10 @@
 
         </div>
 
+
+        <!-- =============================================
+             EMAIL
+        ============================================== -->
 
         <div class="field">
 
@@ -388,6 +488,10 @@
         </div>
 
 
+        <!-- =============================================
+             LOGIN
+        ============================================== -->
+
         <div class="field">
 
             <label class="field-label">
@@ -403,6 +507,10 @@
 
         </div>
 
+
+        <!-- =============================================
+             ROLES
+        ============================================== -->
 
         <div class="field">
 
@@ -436,8 +544,19 @@
 
             </div>
 
+            <div class="field-note">
+                Пользователю можно назначить
+                несколько ролей одновременно.
+                Сохранение заменит текущий набор ролей
+                выбранным набором.
+            </div>
+
         </div>
 
+
+        <!-- =============================================
+             DEPARTMENT
+        ============================================== -->
 
         <div
             id="department-field"
@@ -469,6 +588,7 @@
                         {% endif %}
                     >
                         {{ department.name }}
+
                         {% if not department.is_active %}
                             — отключён
                         {% endif %}
@@ -481,10 +601,100 @@
             <div class="field-note">
                 Отдел обязателен для сотрудника
                 и руководителя отдела.
+                При переводе пользователя можно выбрать
+                другой доступный отдел.
             </div>
 
         </div>
 
+
+        <!-- =============================================
+             MESSENGER ACCESS
+        ============================================== -->
+
+        <div class="field">
+
+            <label class="field-label">
+                Права доступа
+            </label>
+
+            <div class="permissions">
+
+                <label class="permission">
+
+                    <input
+                        id="messenger-access"
+                        type="checkbox"
+                        name="messenger_access"
+                        value="1"
+                        {% if messenger_access %}
+                            checked
+                        {% endif %}
+                    >
+
+                    <span class="permission-content">
+
+                        <span class="permission-title">
+                            Доступ к мессенджеру
+                        </span>
+
+                        <span class="permission-description">
+                            Персональное разрешение на раздел
+                            «Сообщения», внутреннюю переписку
+                            и получение объявлений SD.OS.
+                        </span>
+
+                    </span>
+
+                </label>
+
+
+                {% if messenger_access_by_role %}
+
+                    <div class="permission-role-note">
+                        Пользователь также получает доступ
+                        к мессенджеру через одну из назначенных
+                        ему ролей.
+
+                        Снятие персональной галочки само по себе
+                        не отключит мессенджер, пока такая роль
+                        остаётся у пользователя.
+                    </div>
+
+                {% endif %}
+
+
+                <div class="permission-effective">
+
+                    Текущий фактический доступ:
+
+                    <strong>
+                        {% if messenger_access_effective %}
+                            разрешён
+                        {% else %}
+                            запрещён
+                        {% endif %}
+                    </strong>
+
+                </div>
+
+            </div>
+
+            <div class="field-note">
+                Эта галочка управляет персональным доступом.
+
+                Если одновременно меняются роли,
+                итоговый доступ после сохранения будет
+                складываться из выбранных ролей
+                и этой персональной настройки.
+            </div>
+
+        </div>
+
+
+        <!-- =============================================
+             STATUS
+        ============================================== -->
 
         <div class="field">
 
@@ -573,6 +783,10 @@
     </form>
 
 
+    <!-- =============================================
+         INVITE ACTIONS
+    ============================================== -->
+
     {% if edited_user.status == "invited"
           and not edited_user.username %}
 
@@ -654,10 +868,11 @@
             return;
         }
 
-        let departmentRequired = false;
+        let departmentRequired =
+            false;
 
         roleCheckboxes.forEach(
-            (checkbox) => {
+            checkbox => {
                 if (
                     checkbox.checked
                     && (
@@ -665,7 +880,8 @@
                         || checkbox.value === "department_head"
                     )
                 ) {
-                    departmentRequired = true;
+                    departmentRequired =
+                        true;
                 }
             }
         );
@@ -675,14 +891,16 @@
                 "visible"
             );
 
-            departmentSelect.required = true;
+            departmentSelect.required =
+                true;
 
         } else {
             departmentField.classList.remove(
                 "visible"
             );
 
-            departmentSelect.required = false;
+            departmentSelect.required =
+                false;
         }
     }
 
@@ -692,7 +910,7 @@
             ".role-checkbox"
         )
         .forEach(
-            (checkbox) => {
+            checkbox => {
                 checkbox.addEventListener(
                     "change",
                     updateDepartmentVisibility

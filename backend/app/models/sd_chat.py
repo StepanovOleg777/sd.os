@@ -16,6 +16,11 @@ from sqlalchemy.orm import (
 from backend.app.core.database import Base
 
 
+# =========================================================
+# CONVERSATIONS
+# =========================================================
+
+
 class ChatConversation(Base):
     __tablename__ = "chat_conversations"
 
@@ -49,15 +54,18 @@ class ChatConversation(Base):
         DateTime(timezone=True),
         nullable=False,
         default=datetime.utcnow,
-        index=True,
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
         default=datetime.utcnow,
-        index=True,
     )
+
+
+# =========================================================
+# PARTICIPANTS
+# =========================================================
 
 
 class ChatParticipant(Base):
@@ -67,7 +75,10 @@ class ChatParticipant(Base):
         UniqueConstraint(
             "conversation_id",
             "user_id",
-            name="uq_chat_participant",
+            name=(
+                "uq_chat_participants_"
+                "conversation_user"
+            ),
         ),
     )
 
@@ -108,6 +119,11 @@ class ChatParticipant(Base):
         nullable=True,
         index=True,
     )
+
+
+# =========================================================
+# MESSAGES
+# =========================================================
 
 
 class ChatMessage(Base):
@@ -164,7 +180,13 @@ class ChatMessage(Base):
         Boolean,
         nullable=False,
         default=False,
+        index=True,
     )
+
+
+# =========================================================
+# ANNOUNCEMENTS
+# =========================================================
 
 
 class ChatAnnouncement(Base):
@@ -190,15 +212,6 @@ class ChatAnnouncement(Base):
         index=True,
     )
 
-    department_id: Mapped[int | None] = mapped_column(
-        ForeignKey(
-            "departments.id",
-            ondelete="SET NULL",
-        ),
-        nullable=True,
-        index=True,
-    )
-
     text: Mapped[str] = mapped_column(
         Text,
         nullable=False,
@@ -207,7 +220,7 @@ class ChatAnnouncement(Base):
     requires_acknowledgement: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        default=True,
+        default=False,
     )
 
     is_active: Mapped[bool] = mapped_column(
@@ -231,6 +244,54 @@ class ChatAnnouncement(Base):
     )
 
 
+# =========================================================
+# ANNOUNCEMENT DEPARTMENTS
+# =========================================================
+
+
+class ChatAnnouncementDepartment(Base):
+    __tablename__ = "chat_announcement_departments"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "announcement_id",
+            "department_id",
+            name=(
+                "uq_chat_announcement_departments_"
+                "announcement_department"
+            ),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    announcement_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "chat_announcements.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+    department_id: Mapped[int] = mapped_column(
+        ForeignKey(
+            "departments.id",
+            ondelete="CASCADE",
+        ),
+        nullable=False,
+        index=True,
+    )
+
+
+# =========================================================
+# ANNOUNCEMENT RECIPIENTS
+# =========================================================
+
+
 class ChatAnnouncementRecipient(Base):
     __tablename__ = "chat_announcement_recipients"
 
@@ -238,7 +299,10 @@ class ChatAnnouncementRecipient(Base):
         UniqueConstraint(
             "announcement_id",
             "user_id",
-            name="uq_chat_announcement_recipient",
+            name=(
+                "uq_chat_announcement_recipients_"
+                "announcement_user"
+            ),
         ),
     )
 
@@ -265,17 +329,20 @@ class ChatAnnouncementRecipient(Base):
         index=True,
     )
 
-    delivered_at: Mapped[datetime | None] = mapped_column(
+    delivered_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        nullable=True,
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     read_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+        index=True,
     )
 
     acknowledged_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
+        index=True,
     )

@@ -92,7 +92,8 @@
             border-color: #7277ff;
         }
 
-        .roles {
+        .roles,
+        .permissions {
             padding: 15px;
 
             border: 1px solid #2b2d31;
@@ -101,19 +102,55 @@
             background: #17181b;
         }
 
-        .role {
+        .role,
+        .permission {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
 
             gap: 10px;
-
-            margin-bottom: 10px;
 
             color: #f2f2f2;
         }
 
+        .role {
+            margin-bottom: 10px;
+        }
+
         .role:last-child {
             margin-bottom: 0;
+        }
+
+        .role input,
+        .permission input {
+            width: 16px;
+            height: 16px;
+
+            margin-top: 2px;
+
+            flex:
+                0
+                0
+                16px;
+
+            accent-color: #7277ff;
+        }
+
+        .permission-content {
+            min-width: 0;
+        }
+
+        .permission-title {
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        .permission-description {
+            margin-top: 5px;
+
+            color: #777a80;
+
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         .department-field {
@@ -267,6 +304,15 @@
 
         .actions a:hover {
             background: #292b30;
+        }
+
+
+        @media (max-width: 700px) {
+            body {
+                padding:
+                    24px
+                    16px;
+            }
         }
     </style>
 </head>
@@ -436,6 +482,10 @@
             </div>
 
 
+            <!-- =============================================
+                 ROLES
+            ============================================== -->
+
             <div class="field">
 
                 <label class="field-label">
@@ -465,8 +515,17 @@
 
                 </div>
 
+                <div class="field-note">
+                    Пользователю можно назначить
+                    несколько ролей одновременно.
+                </div>
+
             </div>
 
+
+            <!-- =============================================
+                 DEPARTMENT
+            ============================================== -->
 
             <div
                 id="department-field"
@@ -504,6 +563,58 @@
                 <div class="field-note">
                     Отдел обязателен для сотрудника
                     и руководителя отдела.
+                </div>
+
+            </div>
+
+
+            <!-- =============================================
+                 ACCESS
+            ============================================== -->
+
+            <div class="field">
+
+                <label class="field-label">
+                    Права доступа
+                </label>
+
+                <div class="permissions">
+
+                    <label class="permission">
+
+                        <input
+                            id="messenger-access"
+                            type="checkbox"
+                            name="messenger_access"
+                            value="1"
+                            {% if messenger_access %}
+                                checked
+                            {% endif %}
+                        >
+
+                        <span class="permission-content">
+
+                            <span class="permission-title">
+                                Доступ к мессенджеру
+                            </span>
+
+                            <span class="permission-description">
+                                Пользователь сможет видеть
+                                раздел «Сообщения», вести
+                                внутреннюю переписку и получать
+                                объявления SD.OS.
+                            </span>
+
+                        </span>
+
+                    </label>
+
+                </div>
+
+                <div class="field-note">
+                    Для новых пользователей доступ
+                    включён по умолчанию.
+                    При необходимости его можно снять.
                 </div>
 
             </div>
@@ -547,10 +658,11 @@
             return;
         }
 
-        let departmentRequired = false;
+        let departmentRequired =
+            false;
 
         roleCheckboxes.forEach(
-            (checkbox) => {
+            checkbox => {
                 if (
                     checkbox.checked
                     && (
@@ -558,7 +670,8 @@
                         || checkbox.value === "department_head"
                     )
                 ) {
-                    departmentRequired = true;
+                    departmentRequired =
+                        true;
                 }
             }
         );
@@ -568,15 +681,19 @@
                 "visible"
             );
 
-            departmentSelect.required = true;
+            departmentSelect.required =
+                true;
 
         } else {
             departmentField.classList.remove(
                 "visible"
             );
 
-            departmentSelect.required = false;
-            departmentSelect.value = "";
+            departmentSelect.required =
+                false;
+
+            departmentSelect.value =
+                "";
         }
     }
 
@@ -586,7 +703,7 @@
             ".role-checkbox"
         )
         .forEach(
-            (checkbox) => {
+            checkbox => {
                 checkbox.addEventListener(
                     "change",
                     updateDepartmentVisibility

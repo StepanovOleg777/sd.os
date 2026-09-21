@@ -12,12 +12,18 @@
 
     <script>
         (() => {
-            const savedTheme = localStorage.getItem("sdos-theme");
+            const savedTheme =
+                localStorage.getItem("sdos-theme");
 
-            if (savedTheme === "light" || savedTheme === "dark") {
-                document.documentElement.dataset.theme = savedTheme;
+            if (
+                savedTheme === "light"
+                || savedTheme === "dark"
+            ) {
+                document.documentElement.dataset.theme =
+                    savedTheme;
             } else {
-                document.documentElement.dataset.theme = "dark";
+                document.documentElement.dataset.theme =
+                    "dark";
             }
         })();
     </script>
@@ -26,6 +32,407 @@
         rel="stylesheet"
         href="{{ url_for('static', path='/css/style.css') }}"
     >
+
+    <style>
+        /* =====================================================
+           REQUIRED ANNOUNCEMENT MODAL
+        ====================================================== */
+
+        .required-announcement-overlay {
+            position: fixed;
+
+            inset: 0;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            padding: 24px;
+
+            background:
+                rgba(0, 0, 0, 0.72);
+
+            backdrop-filter:
+                blur(5px);
+
+            z-index: 10000;
+        }
+
+
+        .required-announcement-overlay.visible {
+            display: flex;
+        }
+
+
+        .required-announcement-modal {
+            width:
+                min(
+                    100%,
+                    680px
+                );
+
+            max-height:
+                min(
+                    760px,
+                    calc(
+                        100vh - 48px
+                    )
+                );
+
+            display: flex;
+            flex-direction: column;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 18px;
+
+            background:
+                var(--bg-secondary);
+
+            box-shadow:
+                0 24px 80px
+                rgba(
+                    0,
+                    0,
+                    0,
+                    0.45
+                );
+
+            overflow: hidden;
+        }
+
+
+        .required-announcement-header {
+            display: flex;
+            align-items: center;
+
+            gap: 13px;
+
+            padding:
+                18px
+                20px;
+
+            border-bottom:
+                1px solid
+                var(--border);
+        }
+
+
+        .required-announcement-icon {
+            width: 42px;
+            height: 42px;
+
+            flex:
+                0
+                0
+                42px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 50%;
+
+            background:
+                var(--bg-elevated);
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .required-announcement-icon svg {
+            width: 21px;
+            height: 21px;
+
+            fill:
+                currentColor;
+        }
+
+
+        .required-announcement-header-content {
+            min-width: 0;
+
+            flex: 1;
+        }
+
+
+        .required-announcement-title {
+            color:
+                var(--text-primary);
+
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+
+        .required-announcement-subtitle {
+            margin-top: 4px;
+
+            color:
+                var(--text-muted);
+
+            font-size: 11px;
+        }
+
+
+        .required-announcement-counter {
+            flex-shrink: 0;
+
+            padding:
+                5px
+                8px;
+
+            border-radius: 8px;
+
+            background:
+                var(--bg-elevated);
+
+            color:
+                var(--text-secondary);
+
+            font-size: 10px;
+        }
+
+
+        .required-announcement-body {
+            min-height: 0;
+
+            overflow-y: auto;
+
+            padding:
+                22px
+                22px
+                20px;
+        }
+
+
+        .required-announcement-meta {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 7px;
+
+            margin-bottom: 20px;
+        }
+
+
+        .required-announcement-chip {
+            display: inline-flex;
+            align-items: center;
+
+            min-height: 27px;
+
+            padding:
+                0
+                9px;
+
+            border-radius: 8px;
+
+            background:
+                var(--bg-elevated);
+
+            color:
+                var(--text-secondary);
+
+            font-size: 10px;
+        }
+
+
+        .required-announcement-text {
+            color:
+                var(--text-primary);
+
+            font-size: 14px;
+            line-height: 1.7;
+
+            white-space: pre-wrap;
+
+            overflow-wrap: anywhere;
+        }
+
+
+        .required-announcement-author {
+            margin-top: 22px;
+
+            padding-top: 16px;
+
+            border-top:
+                1px solid
+                var(--border);
+
+            color:
+                var(--text-muted);
+
+            font-size: 11px;
+        }
+
+
+        .required-announcement-notice {
+            margin-top: 16px;
+
+            padding:
+                11px
+                12px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 10px;
+
+            background:
+                var(--bg-primary);
+
+            color:
+                var(--text-secondary);
+
+            font-size: 11px;
+            line-height: 1.55;
+        }
+
+
+        .required-announcement-error {
+            display: none;
+
+            margin-top: 14px;
+
+            color: #d75f68;
+
+            font-size: 11px;
+        }
+
+
+        .required-announcement-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+
+            gap: 10px;
+
+            padding:
+                15px
+                20px;
+
+            border-top:
+                1px solid
+                var(--border);
+
+            background:
+                var(--bg-secondary);
+        }
+
+
+        .required-announcement-confirm {
+            min-height: 42px;
+
+            padding:
+                0
+                18px;
+
+            border-radius: 10px;
+
+            background:
+                var(--accent);
+
+            color: #ffffff;
+
+            font-size: 12px;
+            font-weight: 500;
+
+            cursor: pointer;
+        }
+
+
+        .required-announcement-confirm:hover {
+            background:
+                var(--accent-hover);
+        }
+
+
+        .required-announcement-confirm:disabled {
+            opacity: 0.5;
+
+            cursor: default;
+        }
+
+
+        body.required-announcement-open {
+            overflow: hidden;
+        }
+
+
+        @media (max-width: 700px) {
+
+            .required-announcement-overlay {
+                align-items: flex-end;
+
+                padding: 0;
+            }
+
+
+            .required-announcement-modal {
+                width: 100%;
+
+                max-height:
+                    92vh;
+
+                border-left: 0;
+                border-right: 0;
+                border-bottom: 0;
+
+                border-radius:
+                    18px
+                    18px
+                    0
+                    0;
+            }
+
+
+            .required-announcement-header {
+                padding:
+                    16px
+                    15px;
+            }
+
+
+            .required-announcement-body {
+                padding:
+                    19px
+                    16px;
+            }
+
+
+            .required-announcement-footer {
+                padding:
+                    12px
+                    15px
+                    max(
+                        12px,
+                        env(
+                            safe-area-inset-bottom
+                        )
+                    );
+            }
+
+
+            .required-announcement-confirm {
+                width: 100%;
+            }
+
+
+            .required-announcement-counter {
+                display: none;
+            }
+
+        }
+    </style>
 </head>
 
 <body>
@@ -247,6 +654,11 @@
                         <span class="sidebar-item-text">
                             Сообщения
                         </span>
+
+                        <span
+                            class="sidebar-item-badge"
+                            data-sd-chat-unread-badge
+                        ></span>
                     </a>
 
                 {% endif %}
@@ -391,22 +803,148 @@
 </div>
 
 
+<!-- =========================================================
+     REQUIRED ANNOUNCEMENT
+========================================================== -->
+
+{% if can_use_sd_chat %}
+
+    <div
+        id="requiredAnnouncementOverlay"
+        class="required-announcement-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="requiredAnnouncementTitle"
+    >
+
+        <div class="required-announcement-modal">
+
+            <div class="required-announcement-header">
+
+                <div class="required-announcement-icon">
+
+                    <svg
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="M18 11V5l-8 4H6a3 3 0 0 0 0 6h1l2 5h3l-2-5 8 4v-6a2 2 0 0 0 0-2Z"
+                        />
+                    </svg>
+
+                </div>
+
+
+                <div class="required-announcement-header-content">
+
+                    <div
+                        id="requiredAnnouncementTitle"
+                        class="required-announcement-title"
+                    >
+                        Важное объявление
+                    </div>
+
+                    <div
+                        id="requiredAnnouncementSubtitle"
+                        class="required-announcement-subtitle"
+                    >
+                        Требуется подтверждение ознакомления
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="requiredAnnouncementCounter"
+                    class="required-announcement-counter"
+                ></div>
+
+            </div>
+
+
+            <div class="required-announcement-body">
+
+                <div
+                    id="requiredAnnouncementMeta"
+                    class="required-announcement-meta"
+                ></div>
+
+
+                <div
+                    id="requiredAnnouncementText"
+                    class="required-announcement-text"
+                ></div>
+
+
+                <div
+                    id="requiredAnnouncementAuthor"
+                    class="required-announcement-author"
+                ></div>
+
+
+                <div class="required-announcement-notice">
+                    Это объявление требует подтверждения ознакомления.
+                    Оно будет появляться при входе в SD.OS,
+                    пока вы его не подтвердите.
+                </div>
+
+
+                <div
+                    id="requiredAnnouncementError"
+                    class="required-announcement-error"
+                ></div>
+
+            </div>
+
+
+            <div class="required-announcement-footer">
+
+                <button
+                    id="requiredAnnouncementConfirm"
+                    class="required-announcement-confirm"
+                    type="button"
+                >
+                    Подтвердить ознакомление
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+{% endif %}
+
+
 <script
     src="{{ url_for('static', path='/js/app.js') }}"
 ></script>
+
+{% if can_use_sd_chat %}
+
+    <script
+        src="{{ url_for('static', path='/js/sd_chat_badge.js') }}"
+    ></script>
+
+{% endif %}
 
 
 <script>
     (() => {
         const toggle =
-            document.getElementById("theme-toggle");
+            document.getElementById(
+                "theme-toggle"
+            );
 
         const icon =
-            document.getElementById("theme-icon");
+            document.getElementById(
+                "theme-icon"
+            );
 
         function updateThemeIcon() {
             const theme =
-                document.documentElement.dataset.theme
+                document.documentElement
+                    .dataset.theme
                 || "dark";
 
             icon.textContent =
@@ -421,7 +959,8 @@
             "click",
             () => {
                 const currentTheme =
-                    document.documentElement.dataset.theme
+                    document.documentElement
+                        .dataset.theme
                     || "dark";
 
                 const nextTheme =
@@ -429,7 +968,8 @@
                         ? "light"
                         : "dark";
 
-                document.documentElement.dataset.theme =
+                document.documentElement
+                    .dataset.theme =
                     nextTheme;
 
                 localStorage.setItem(
@@ -452,18 +992,23 @@
         logoutButton.addEventListener(
             "click",
             async () => {
-                logoutButton.disabled = true;
+                logoutButton.disabled =
+                    true;
 
                 try {
-                    const response = await fetch(
-                        "/api/auth/logout",
-                        {
-                            method: "POST",
-                        }
-                    );
+                    const response =
+                        await fetch(
+                            "/api/auth/logout",
+                            {
+                                method:
+                                    "POST",
+                            }
+                        );
 
                     if (!response.ok) {
-                        logoutButton.disabled = false;
+                        logoutButton.disabled =
+                            false;
+
                         return;
                     }
 
@@ -471,7 +1016,8 @@
                         "/login";
 
                 } catch (error) {
-                    logoutButton.disabled = false;
+                    logoutButton.disabled =
+                        false;
                 }
             }
         );
@@ -553,6 +1099,452 @@
             }
         );
     })();
+
+
+    /* =====================================================
+       REQUIRED ANNOUNCEMENTS ON LOGIN
+    ====================================================== */
+
+    {% if can_use_sd_chat %}
+
+    (() => {
+        const overlay =
+            document.getElementById(
+                "requiredAnnouncementOverlay"
+            );
+
+        const counter =
+            document.getElementById(
+                "requiredAnnouncementCounter"
+            );
+
+        const meta =
+            document.getElementById(
+                "requiredAnnouncementMeta"
+            );
+
+        const text =
+            document.getElementById(
+                "requiredAnnouncementText"
+            );
+
+        const author =
+            document.getElementById(
+                "requiredAnnouncementAuthor"
+            );
+
+        const errorElement =
+            document.getElementById(
+                "requiredAnnouncementError"
+            );
+
+        const confirmButton =
+            document.getElementById(
+                "requiredAnnouncementConfirm"
+            );
+
+
+        let pendingAnnouncements =
+            [];
+
+        let currentAnnouncementIndex =
+            0;
+
+
+        function escapeHtml(value) {
+            const element =
+                document.createElement(
+                    "div"
+                );
+
+            element.textContent =
+                value ?? "";
+
+            return element.innerHTML;
+        }
+
+
+        function formatDateTime(value) {
+            if (!value) {
+                return "";
+            }
+
+            const date =
+                new Date(value);
+
+            if (
+                Number.isNaN(
+                    date.getTime()
+                )
+            ) {
+                return "";
+            }
+
+            return date.toLocaleString(
+                "ru-RU",
+                {
+                    day:
+                        "2-digit",
+
+                    month:
+                        "2-digit",
+
+                    year:
+                        "numeric",
+
+                    hour:
+                        "2-digit",
+
+                    minute:
+                        "2-digit",
+                }
+            );
+        }
+
+
+        async function apiRequest(
+            url,
+            options = {}
+        ) {
+            const response =
+                await fetch(
+                    url,
+                    {
+                        credentials:
+                            "same-origin",
+
+                        ...options,
+
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+
+                            ...(
+                                options.headers
+                                || {}
+                            ),
+                        },
+                    }
+                );
+
+            let data =
+                null;
+
+            try {
+                data =
+                    await response.json();
+
+            } catch (_) {
+                data =
+                    null;
+            }
+
+            if (!response.ok) {
+                throw new Error(
+                    data?.detail
+                    || "Ошибка запроса."
+                );
+            }
+
+            return data;
+        }
+
+
+        function getAudienceChips(
+            announcement
+        ) {
+            const chips =
+                [];
+
+            if (
+                announcement.audience_type
+                === "company"
+            ) {
+                chips.push(
+                    "Вся компания"
+                );
+
+            } else {
+                const departments =
+                    announcement.departments
+                    || [];
+
+                departments.forEach(
+                    department => {
+                        if (
+                            department?.name
+                        ) {
+                            chips.push(
+                                department.name
+                            );
+                        }
+                    }
+                );
+            }
+
+            return chips;
+        }
+
+
+        function hideModal() {
+            overlay.classList.remove(
+                "visible"
+            );
+
+            document.body.classList.remove(
+                "required-announcement-open"
+            );
+        }
+
+
+        async function markAnnouncementRead(
+            announcementId
+        ) {
+            try {
+                await apiRequest(
+                    `/api/sd-chat/announcements/${announcementId}/read`,
+                    {
+                        method:
+                            "POST",
+                    }
+                );
+
+            } catch (_) {
+                /*
+                 * Не закрываем обязательное объявление,
+                 * если фиксация read_at временно не удалась.
+                 * Для прекращения показа всё равно нужен
+                 * acknowledged_at.
+                 */
+            }
+        }
+
+
+        async function renderCurrentAnnouncement() {
+            const announcement =
+                pendingAnnouncements[
+                    currentAnnouncementIndex
+                ];
+
+            if (!announcement) {
+                hideModal();
+
+                return;
+            }
+
+
+            errorElement.style.display =
+                "none";
+
+            errorElement.textContent =
+                "";
+
+            confirmButton.disabled =
+                false;
+
+
+            counter.textContent =
+                `${currentAnnouncementIndex + 1} из ${pendingAnnouncements.length}`;
+
+
+            const chips =
+                getAudienceChips(
+                    announcement
+                );
+
+
+            if (
+                announcement.created_at
+            ) {
+                chips.push(
+                    formatDateTime(
+                        announcement.created_at
+                    )
+                );
+            }
+
+
+            if (
+                announcement.expires_at
+            ) {
+                chips.push(
+                    "Действует до "
+                    + formatDateTime(
+                        announcement.expires_at
+                    )
+                );
+            }
+
+
+            meta.innerHTML =
+                chips
+                    .map(
+                        chip => `
+                            <span
+                                class="required-announcement-chip"
+                            >
+                                ${escapeHtml(chip)}
+                            </span>
+                        `
+                    )
+                    .join("");
+
+
+            text.textContent =
+                announcement.text
+                || "";
+
+
+            author.textContent =
+                "Автор: "
+                + (
+                    announcement.author
+                        ?.fio
+                    || "Неизвестно"
+                );
+
+
+            overlay.classList.add(
+                "visible"
+            );
+
+            document.body.classList.add(
+                "required-announcement-open"
+            );
+
+
+            await markAnnouncementRead(
+                announcement.id
+            );
+        }
+
+
+        async function loadPendingAnnouncements() {
+            try {
+                const data =
+                    await apiRequest(
+                        "/api/sd-chat/announcements/pending-required"
+                    );
+
+                pendingAnnouncements =
+                    data.announcements
+                    || [];
+
+                currentAnnouncementIndex =
+                    0;
+
+
+                if (
+                    pendingAnnouncements.length
+                    === 0
+                ) {
+                    hideModal();
+
+                    return;
+                }
+
+
+                await renderCurrentAnnouncement();
+
+            } catch (error) {
+                /*
+                 * Ошибка проверки объявлений
+                 * не должна блокировать вход в SD.OS.
+                 *
+                 * При следующей загрузке страницы
+                 * проверка будет выполнена снова.
+                 */
+                console.error(
+                    "Не удалось проверить обязательные объявления:",
+                    error
+                );
+            }
+        }
+
+
+        async function acknowledgeCurrentAnnouncement() {
+            const announcement =
+                pendingAnnouncements[
+                    currentAnnouncementIndex
+                ];
+
+            if (!announcement) {
+                hideModal();
+
+                return;
+            }
+
+
+            confirmButton.disabled =
+                true;
+
+            errorElement.style.display =
+                "none";
+
+            errorElement.textContent =
+                "";
+
+
+            try {
+                await apiRequest(
+                    `/api/sd-chat/announcements/${announcement.id}/acknowledge`,
+                    {
+                        method:
+                            "POST",
+                    }
+                );
+
+
+                currentAnnouncementIndex +=
+                    1;
+
+
+                if (
+                    currentAnnouncementIndex
+                    >= pendingAnnouncements.length
+                ) {
+                    hideModal();
+
+                    return;
+                }
+
+
+                await renderCurrentAnnouncement();
+
+            } catch (error) {
+                errorElement.textContent =
+                    error.message;
+
+                errorElement.style.display =
+                    "block";
+
+                confirmButton.disabled =
+                    false;
+            }
+        }
+
+
+        confirmButton.addEventListener(
+            "click",
+            acknowledgeCurrentAnnouncement
+        );
+
+
+        /*
+         * Специально НЕ добавляем:
+         * - закрытие по клику на фон;
+         * - крестик;
+         * - закрытие по Escape.
+         *
+         * Обязательное объявление снимается
+         * только после подтверждения ознакомления.
+         */
+
+
+        loadPendingAnnouncements();
+    })();
+
+    {% endif %}
 </script>
 
 </body>
