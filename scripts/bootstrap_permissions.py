@@ -8,7 +8,6 @@ from backend.app.models.permission import (
     RolePermission,
 )
 from backend.app.models.role import Role
-from backend.app.models.department import Department
 
 
 PERMISSIONS = [

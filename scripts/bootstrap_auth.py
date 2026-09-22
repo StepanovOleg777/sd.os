@@ -3,6 +3,7 @@ from getpass import getpass
 
 from sqlalchemy import or_, select
 
+from backend.app.models.department import Department
 from backend.app.core.database import AsyncSessionLocal
 from backend.app.core.security import hash_password
 from backend.app.models.role import Role, UserRole
