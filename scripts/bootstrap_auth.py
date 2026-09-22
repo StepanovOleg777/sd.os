@@ -220,14 +220,10 @@ async def main() -> None:
         "=" * 50
     )
     print(
-        "Первичная настройка пользователей SD.OS"
+        "Первичная настройка SD.OS"
     )
     print(
         "=" * 50
-    )
-
-    await create_user(
-        "admin"
     )
 
     await create_user(
