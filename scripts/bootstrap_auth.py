@@ -21,7 +21,7 @@ ROLES = [
     },
     {
         "code": "director",
-        "name": "Руководитель",
+        "name": "Собственник",
     },
     {
         "code": "department_head",

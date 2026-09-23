@@ -603,7 +603,10 @@ async def get_roles_available_for_actor(
         )
     )
 
-    if "director" in actor_role_codes:
+    if (
+            "director" in actor_role_codes
+            or "developer" in actor_role_codes
+    ):
         return all_roles
 
     can_manage_roles = (
@@ -646,7 +649,10 @@ async def validate_role_assignment(
         )
     )
 
-    if "director" in actor_role_codes:
+    if (
+            "director" in actor_role_codes
+            or "developer" in actor_role_codes
+    ):
         return None
 
     protected_changes = (
@@ -700,7 +706,10 @@ async def validate_new_user_roles(
         )
     )
 
-    if "director" in actor_role_codes:
+    if (
+            "director" in actor_role_codes
+            or "developer" in actor_role_codes
+    ):
         return None
 
     if (
