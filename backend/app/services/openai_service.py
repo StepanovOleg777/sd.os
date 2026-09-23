@@ -2,7 +2,7 @@ import json
 import time
 from typing import Any
 
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 
 from backend.app.core.config import settings
 from backend.app.services.contact_agent import contact_agent
@@ -403,11 +403,11 @@ class OpenAIService:
     def __init__(self) -> None:
         self.client = AsyncOpenAI(
             api_key=settings.OPENAI_API_KEY,
+            http_client=DefaultAsyncHttpxClient(
+                proxy=settings.OPENAI_PROXY_URL,
+            ),
         )
 
-        # Временная память одного диалога.
-        # Позже заменим на отдельный conversation_id
-        # для каждого пользователя / браузера.
         self.previous_response_id: str | None = None
 
     async def process(

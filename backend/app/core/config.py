@@ -52,6 +52,10 @@ class Settings:
         "",
     )
 
+    OPENAI_PROXY_URL = os.getenv(
+        "OPENAI_PROXY_URL",
+    )
+
     OPENAI_MODEL = os.getenv(
         "OPENAI_MODEL",
         "gpt-5.6-luna",
