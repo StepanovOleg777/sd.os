@@ -66,7 +66,8 @@ async def send_message(
     user: User = Depends(get_current_user),
 ) -> ChatResponse:
     result = await chat_service.process_message(
-        payload.message
+        message=payload.message,
+        user_id=user.id,
     )
 
     return ChatResponse(

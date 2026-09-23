@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Справочник — SD.OS</title>
+
+    <script>
+        (() => {
+            const savedTheme =
+                localStorage.getItem("sdos-theme");
+
+            if (
+                savedTheme === "light"
+                || savedTheme === "dark"
+            ) {
+                document.documentElement.dataset.theme =
+                    savedTheme;
+            } else {
+                document.documentElement.dataset.theme =
+                    "dark";
+            }
+        })();
+    </script>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', path='/css/style.css') }}?v=2"
+    >
+
+    <style>
+        .directory-layout {
+            flex: 1;
+
+            min-width: 0;
+            min-height: 0;
+
+            display: flex;
+            flex-direction: column;
+
+            overflow: hidden;
+
+            background:
+                var(--bg-primary);
+        }
+
+
+        .directory-header {
+            padding:
+                22px
+                24px
+                18px;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            background:
+                var(--bg-secondary);
+        }
+
+
+        .directory-title {
+            margin: 0;
+
+            color:
+                var(--text-primary);
+
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+
+        .directory-subtitle {
+            margin-top: 6px;
+
+            color:
+                var(--text-muted);
+
+            font-size: 12px;
+        }
+
+
+        .directory-search-row {
+            display: flex;
+            align-items: center;
+
+            gap: 10px;
+
+            margin-top: 18px;
+        }
+
+
+        .directory-search-wrapper {
+            position: relative;
+
+            flex: 1;
+
+            min-width: 0;
+            max-width: 620px;
+        }
+
+
+        .directory-search {
+            width: 100%;
+            height: 42px;
+
+            padding:
+                0
+                42px
+                0
+                14px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 10px;
+
+            outline: none;
+
+            background:
+                var(--bg-primary);
+
+            color:
+                var(--text-primary);
+
+            font-size: 13px;
+        }
+
+
+        .directory-search::placeholder {
+            color:
+                var(--text-muted);
+        }
+
+
+        .directory-search:focus {
+            border-color:
+                var(--accent);
+        }
+
+
+        .directory-clear {
+            position: absolute;
+
+            top: 50%;
+            right: 7px;
+
+            width: 28px;
+            height: 28px;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            transform:
+                translateY(-50%);
+
+            border: 0;
+            border-radius: 7px;
+
+            background:
+                transparent;
+
+            color:
+                var(--text-muted);
+
+            font-size: 18px;
+
+            cursor: pointer;
+        }
+
+
+        .directory-clear:hover {
+            background:
+                var(--bg-elevated);
+
+            color:
+                var(--text-primary);
+        }
+
+
+        .directory-search-button {
+            height: 42px;
+
+            padding:
+                0
+                18px;
+
+            border: 0;
+            border-radius: 10px;
+
+            background:
+                var(--accent);
+
+            color: #ffffff;
+
+            font-size: 12px;
+            font-weight: 500;
+
+            cursor: pointer;
+        }
+
+
+        .directory-search-button:hover {
+            background:
+                var(--accent-hover);
+        }
+
+
+        .directory-search-button:disabled {
+            opacity: 0.6;
+
+            cursor: default;
+        }
+
+
+        .directory-meta {
+            min-height: 38px;
+
+            display: flex;
+            align-items: center;
+
+            padding:
+                0
+                24px;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            color:
+                var(--text-muted);
+
+            font-size: 11px;
+
+            background:
+                var(--bg-primary);
+        }
+
+
+        .directory-content {
+            flex: 1;
+
+            min-width: 0;
+            min-height: 0;
+
+            overflow: auto;
+        }
+
+
+        .directory-table {
+            width: 100%;
+
+            border-collapse: collapse;
+
+            white-space: nowrap;
+        }
+
+
+        .directory-table th {
+            position: sticky;
+
+            top: 0;
+
+            z-index: 2;
+
+            padding:
+                11px
+                14px;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            background:
+                var(--bg-secondary);
+
+            color:
+                var(--text-muted);
+
+            font-size: 10px;
+            font-weight: 600;
+
+            text-align: left;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.035em;
+        }
+
+
+        .directory-table td {
+            padding:
+                12px
+                14px;
+
+            border-bottom:
+                1px solid
+                var(--border);
+
+            color:
+                var(--text-primary);
+
+            font-size: 12px;
+
+            vertical-align: middle;
+        }
+
+
+        .directory-table tbody tr {
+            transition:
+                background 100ms ease;
+        }
+
+
+        .directory-table tbody tr:hover {
+            background:
+                var(--bg-elevated);
+        }
+
+
+        .directory-name {
+            color:
+                var(--text-primary);
+
+            font-weight: 500;
+        }
+
+
+        .directory-phone-link,
+        .directory-email-link {
+            color:
+                var(--text-primary);
+
+            text-decoration: none;
+        }
+
+
+        .directory-phone-link:hover,
+        .directory-email-link:hover {
+            color:
+                var(--accent);
+        }
+
+
+        .directory-empty {
+            min-height: 300px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 30px;
+        }
+
+
+        .directory-empty-content {
+            max-width: 420px;
+
+            text-align: center;
+        }
+
+
+        .directory-empty-icon {
+            width: 64px;
+            height: 64px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            margin:
+                0
+                auto
+                16px;
+
+            border:
+                1px solid
+                var(--border);
+
+            border-radius: 50%;
+
+            background:
+                var(--bg-secondary);
+
+            color:
+                var(--text-secondary);
+        }
+
+
+        .directory-empty-icon svg {
+            width: 28px;
+            height: 28px;
+
+            fill:
+                currentColor;
+        }
+
+
+        .directory-empty-title {
+            color:
+                var(--text-primary);
+
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+
+        .directory-empty-text {
+            margin-top: 7px;
+
+            color:
+                var(--text-muted);
+
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+
+        .directory-error {
+            color:
+                var(--text-muted);
+        }
+
+
+        @media (max-width: 700px) {
+
+            .directory-header {
+                padding:
+                    18px
+                    14px
+                    14px;
+            }
+
+
+            .directory-title {
+                font-size: 19px;
+            }
+
+
+            .directory-search-row {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+
+            .directory-search-wrapper {
+                max-width: none;
+            }
+
+
+            .directory-search-button {
+                width: 100%;
+            }
+
+
+            .directory-meta {
+                padding:
+                    0
+                    14px;
+            }
+
+
+            .directory-table th,
+            .directory-table td {
+                padding:
+                    11px
+                    12px;
+            }
+
+        }
+    </style>
+</head>
+
+
+<body>
+
+<div class="app">
+
+    <!-- =====================================================
+         TOPBAR
+    ====================================================== -->
+
+    <header class="topbar">
+
+        <div class="topbar-left">
+
+            <button
+                type="button"
+                id="sidebar-toggle"
+                class="sidebar-toggle"
+                aria-label="Открыть меню"
+                title="Меню"
+            >
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M4 6h16v2H4V6Zm0 5h16v2H4v-2Zm0 5h16v2H4v-2Z"
+                    />
+                </svg>
+            </button>
+
+
+            <div class="brand">
+
+                <div class="brand-mark">
+                    <img
+                        src="/static/img/stroydvor.png"
+                        alt="СтройДвор"
+                    >
+                </div>
+
+                <div class="brand-text">
+
+                    <span class="brand-name">
+                        SD.OS
+                    </span>
+
+                    <span class="brand-version">
+                        v{{ app_version }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="topbar-actions">
+
+            <div
+                class="current-user"
+                title="{{ current_user.fio }}"
+            >
+                {{ current_user.fio }}
+            </div>
+
+
+            {% if can_access_admin %}
+
+                <a
+                    href="/admin/users"
+                    class="admin-button"
+                >
+                    Админка
+                </a>
+
+            {% endif %}
+
+
+            <button
+                type="button"
+                id="theme-toggle"
+                class="theme-toggle"
+                title="Сменить тему"
+            >
+                <span
+                    id="theme-icon"
+                    class="theme-icon"
+                ></span>
+            </button>
+
+
+            <div class="status">
+                <span class="status-dot"></span>
+                <span>Online</span>
+            </div>
+
+
+            <button
+                type="button"
+                id="logout-button"
+                class="logout-button"
+            >
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M10 17v-2h4V9h-4V7l-5 5 5 5Zm1-14h8a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-8v-2h8V5h-8V3Z"
+                    />
+                </svg>
+
+                <span>
+                    Выйти
+                </span>
+            </button>
+
+        </div>
+
+    </header>
+
+
+    <div class="workspace">
+
+        <!-- =================================================
+             SIDEBAR
+        ================================================== -->
+
+        <aside
+            id="sidebar"
+            class="sidebar"
+        >
+
+            <nav class="sidebar-nav">
+
+                <a
+                    href="/"
+                    class="sidebar-item"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M12 2a7 7 0 0 0-7 7v1.28A4 4 0 0 0 6 18h1v3a1 1 0 0 0 1.55.83L13.65 18H17a4 4 0 0 0 2-7.46V9a7 7 0 0 0-7-7Zm5 14h-4.02L9 18.99V16H6a2 2 0 0 1-.5-3.94L7 11.67V9a5 5 0 0 1 10 0v2.79l1.11.55A2 2 0 0 1 17 16Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        ИИ
+                    </span>
+                </a>
+
+
+                <a
+                    href="/directory"
+                    class="sidebar-item active"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm0 2h14v14H5V5Zm3 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm6-1v2h3V8h-3Zm0 4v2h3v-2h-3ZM7 15c-1.67 0-3 1.33-3 3h2c0-.56.44-1 1-1h2c.56 0 1 .44 1 1h2c0-1.67-1.33-3-3-3H7Zm7 1v2h3v-2h-3Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Справочник
+                    </span>
+                </a>
+
+
+                <a
+                    href="/sd-chat"
+                    class="sidebar-item"
+                >
+                    <span class="sidebar-item-icon">
+
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M21.8 2.2a1 1 0 0 0-1.05-.23L2.62 9.09a1 1 0 0 0 .06 1.88l7.12 2.37 2.37 7.12a1 1 0 0 0 .93.68h.03a1 1 0 0 0 .92-.62l7.96-17.25a1 1 0 0 0-.21-1.07ZM5.92 10.1l12.37-4.86-7.59 6.1-4.78-1.24Zm7.24 7.3-1.52-4.56 6.24-5.02-4.72 9.58Z"
+                            />
+                        </svg>
+
+                    </span>
+
+                    <span class="sidebar-item-text">
+                        Сообщения
+                    </span>
+                </a>
+
+            </nav>
+
+
+            <div class="sidebar-bottom">
+
+                <div class="sidebar-user">
+
+                    <div class="sidebar-user-avatar">
+                        {{ current_user.fio[:1] | upper }}
+                    </div>
+
+                    <div class="sidebar-user-data">
+
+                        <div class="sidebar-user-name">
+                            {{ current_user.fio }}
+                        </div>
+
+                        <div class="sidebar-user-caption">
+                            SD.OS
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </aside>
+
+
+        <div
+            id="sidebar-backdrop"
+            class="sidebar-backdrop"
+        ></div>
+
+
+        <!-- =================================================
+             DIRECTORY
+        ================================================== -->
+
+        <main class="directory-layout">
+
+            <div class="directory-header">
+
+                <h1 class="directory-title">
+                    Корпоративный справочник
+                </h1>
+
+                <div class="directory-subtitle">
+                    Сотрудники, отделы и контактные данные
+                </div>
+
+
+                <div class="directory-search-row">
+
+                    <div class="directory-search-wrapper">
+
+                        <input
+                            id="directory-search"
+                            class="directory-search"
+                            type="text"
+                            autocomplete="off"
+                            placeholder="ФИО, отдел, должность, объект..."
+                        >
+
+                        <button
+                            id="directory-clear"
+                            class="directory-clear"
+                            type="button"
+                            aria-label="Очистить поиск"
+                        >
+                            ×
+                        </button>
+
+                    </div>
+
+
+                    <button
+                        id="directory-search-button"
+                        class="directory-search-button"
+                        type="button"
+                    >
+                        Найти
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="directory-meta"
+                class="directory-meta"
+            >
+                Загрузка справочника...
+            </div>
+
+
+            <div
+                id="directory-content"
+                class="directory-content"
+            ></div>
+
+        </main>
+
+    </div>
+
+</div>
+
+
+<script>
+    const canViewPersonalPhone =
+        {{ can_view_personal_phone | tojson }};
+
+
+    const searchInput =
+        document.getElementById(
+            "directory-search"
+        );
+
+    const clearButton =
+        document.getElementById(
+            "directory-clear"
+        );
+
+    const searchButton =
+        document.getElementById(
+            "directory-search-button"
+        );
+
+    const meta =
+        document.getElementById(
+            "directory-meta"
+        );
+
+    const content =
+        document.getElementById(
+            "directory-content"
+        );
+
+
+    function escapeHtml(value) {
+        return String(
+            value ?? ""
+        )
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+
+    function normalizePhone(value) {
+        return String(
+            value ?? ""
+        )
+            .replace(
+                /[^\d+]/g,
+                ""
+            );
+    }
+
+
+    function renderPhone(
+        number
+    ) {
+        const value =
+            String(
+                number ?? ""
+            ).trim();
+
+        if (!value) {
+            return "—";
+        }
+
+        return `
+            <a
+                class="directory-phone-link"
+                href="tel:${escapeHtml(
+                    normalizePhone(
+                        value
+                    )
+                )}"
+            >
+                ${escapeHtml(value)}
+            </a>
+        `;
+    }
+
+
+    function renderPhoneList(
+        numbers
+    ) {
+        if (
+            !Array.isArray(numbers)
+            || !numbers.length
+        ) {
+            return "—";
+        }
+
+        return numbers
+            .map(
+                number =>
+                    renderPhone(
+                        number
+                    )
+            )
+            .join("<br>");
+    }
+
+
+    function corporateNumbers(
+        contact
+    ) {
+        const phones =
+            contact.phones
+            ?.corporate;
+
+        if (
+            !Array.isArray(phones)
+        ) {
+            return [];
+        }
+
+        return phones
+            .map(
+                item =>
+                    item?.number
+            )
+            .filter(Boolean);
+    }
+
+
+    function internalNumbers(
+        contact
+    ) {
+        const phones =
+            contact.phones
+            ?.internal;
+
+        if (
+            !Array.isArray(phones)
+        ) {
+            return [];
+        }
+
+        return phones
+            .map(
+                item => {
+                    if (
+                        typeof item
+                        === "string"
+                    ) {
+                        return item;
+                    }
+
+                    return (
+                        item?.number
+                        || item?.short_number
+                        || ""
+                    );
+                }
+            )
+            .filter(Boolean);
+    }
+
+
+    function personalNumbers(
+        contact
+    ) {
+        const phones =
+            contact.phones
+            ?.personal;
+
+        if (
+            !Array.isArray(phones)
+        ) {
+            return [];
+        }
+
+        return phones
+            .map(
+                item => {
+                    if (
+                        typeof item
+                        === "string"
+                    ) {
+                        return item;
+                    }
+
+                    return (
+                        item?.number
+                        || ""
+                    );
+                }
+            )
+            .filter(Boolean);
+    }
+
+
+    function renderEmail(
+        email
+    ) {
+        const value =
+            String(
+                email ?? ""
+            ).trim();
+
+        if (!value) {
+            return "—";
+        }
+
+        return `
+            <a
+                class="directory-email-link"
+                href="mailto:${escapeHtml(value)}"
+            >
+                ${escapeHtml(value)}
+            </a>
+        `;
+    }
+
+
+    function renderEmpty(
+        title,
+        text,
+        isError = false
+    ) {
+        content.innerHTML = `
+            <div class="directory-empty">
+
+                <div class="directory-empty-content">
+
+                    <div class="directory-empty-icon">
+
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                d="M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5Zm0 2h14v14H5V5Zm3 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm6-1v2h3V8h-3Zm0 4v2h3v-2h-3ZM7 15c-1.67 0-3 1.33-3 3h2c0-.56.44-1 1-1h2c.56 0 1 .44 1 1h2c0-1.67-1.33-3-3-3H7Zm7 1v2h3v-2h-3Z"
+                            />
+                        </svg>
+
+                    </div>
+
+                    <div
+                        class="
+                            directory-empty-title
+                            ${isError
+                                ? "directory-error"
+                                : ""}
+                        "
+                    >
+                        ${escapeHtml(title)}
+                    </div>
+
+                    <div class="directory-empty-text">
+                        ${escapeHtml(text)}
+                    </div>
+
+                </div>
+
+            </div>
+        `;
+    }
+
+
+    function renderContacts(
+        contacts
+    ) {
+        if (
+            !Array.isArray(contacts)
+            || !contacts.length
+        ) {
+            renderEmpty(
+                "Ничего не найдено",
+                "Попробуйте изменить поисковый запрос."
+            );
+
+            return;
+        }
+
+
+        const personalHeader =
+            canViewPersonalPhone
+            ? `
+                <th>
+                    Личный
+                </th>
+            `
+            : "";
+
+
+        const rows =
+            contacts
+                .map(
+                    contact => {
+
+                        const personalCell =
+                            canViewPersonalPhone
+                            ? `
+                                <td>
+                                    ${renderPhoneList(
+                                        personalNumbers(
+                                            contact
+                                        )
+                                    )}
+                                </td>
+                            `
+                            : "";
+
+
+                        return `
+                            <tr>
+
+                                <td class="directory-name">
+                                    ${escapeHtml(
+                                        contact.fio
+                                        || "—"
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${renderPhoneList(
+                                        internalNumbers(
+                                            contact
+                                        )
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${renderPhoneList(
+                                        corporateNumbers(
+                                            contact
+                                        )
+                                    )}
+                                </td>
+
+                                ${personalCell}
+
+                                <td>
+                                    ${renderEmail(
+                                        contact.corporate_email
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        contact.department
+                                        || "—"
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        contact.position
+                                        || "—"
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        contact.supervisor
+                                        || "—"
+                                    )}
+                                </td>
+
+                                <td>
+                                    ${escapeHtml(
+                                        contact.location
+                                        || "—"
+                                    )}
+                                </td>
+
+                            </tr>
+                        `;
+                    }
+                )
+                .join("");
+
+
+        content.innerHTML = `
+            <table class="directory-table">
+
+                <thead>
+                    <tr>
+                        <th>ФИО</th>
+                        <th>Внутренний</th>
+                        <th>Корпоративный</th>
+
+                        ${personalHeader}
+
+                        <th>
+                            Корпоративная почта
+                        </th>
+
+                        <th>Отдел</th>
+                        <th>Должность</th>
+                        <th>Руководитель</th>
+                        <th>Объект</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    ${rows}
+                </tbody>
+
+            </table>
+        `;
+    }
+
+
+    async function loadDirectory() {
+        const query =
+            searchInput.value.trim();
+
+
+        searchButton.disabled =
+            true;
+
+        meta.textContent =
+            "Загрузка...";
+
+
+        try {
+            const params =
+                new URLSearchParams();
+
+            if (query) {
+                params.set(
+                    "q",
+                    query
+                );
+            }
+
+
+            const response =
+                await fetch(
+                    `/api/directory/search?${params.toString()}`
+                );
+
+
+            if (!response.ok) {
+                throw new Error(
+                    "Не удалось загрузить справочник."
+                );
+            }
+
+
+            const data =
+                await response.json();
+
+
+            const contacts =
+                Array.isArray(
+                    data.results
+                )
+                ? data.results
+                : [];
+
+
+            meta.textContent =
+                `Найдено сотрудников: ${contacts.length}`;
+
+
+            renderContacts(
+                contacts
+            );
+
+        } catch (error) {
+
+            meta.textContent =
+                "Ошибка загрузки";
+
+
+            renderEmpty(
+                "Справочник временно недоступен",
+                error.message
+                || "Не удалось получить данные.",
+                true
+            );
+
+        } finally {
+
+            searchButton.disabled =
+                false;
+
+        }
+    }
+
+
+    searchInput.addEventListener(
+        "input",
+        () => {
+            clearButton.style.display =
+                searchInput.value
+                    ? "flex"
+                    : "none";
+        }
+    );
+
+
+    searchInput.addEventListener(
+        "keydown",
+        event => {
+            if (
+                event.key
+                === "Enter"
+            ) {
+                loadDirectory();
+            }
+        }
+    );
+
+
+    searchButton.addEventListener(
+        "click",
+        loadDirectory
+    );
+
+
+    clearButton.addEventListener(
+        "click",
+        () => {
+            searchInput.value =
+                "";
+
+            clearButton.style.display =
+                "none";
+
+            searchInput.focus();
+
+            loadDirectory();
+        }
+    );
+
+
+    /* =====================================================
+       THEME
+    ====================================================== */
+
+    (() => {
+        const toggle =
+            document.getElementById(
+                "theme-toggle"
+            );
+
+        const icon =
+            document.getElementById(
+                "theme-icon"
+            );
+
+
+        function updateThemeIcon() {
+            const theme =
+                document.documentElement
+                    .dataset.theme
+                || "dark";
+
+            icon.textContent =
+                theme === "dark"
+                ? "☀"
+                : "☾";
+        }
+
+
+        updateThemeIcon();
+
+
+        toggle.addEventListener(
+            "click",
+            () => {
+                const currentTheme =
+                    document.documentElement
+                        .dataset.theme
+                    || "dark";
+
+                const nextTheme =
+                    currentTheme === "dark"
+                    ? "light"
+                    : "dark";
+
+
+                document.documentElement
+                    .dataset.theme =
+                    nextTheme;
+
+
+                localStorage.setItem(
+                    "sdos-theme",
+                    nextTheme
+                );
+
+
+                updateThemeIcon();
+            }
+        );
+    })();
+
+
+    /* =====================================================
+       LOGOUT
+    ====================================================== */
+
+    (() => {
+        const logoutButton =
+            document.getElementById(
+                "logout-button"
+            );
+
+
+        logoutButton.addEventListener(
+            "click",
+            async () => {
+                logoutButton.disabled =
+                    true;
+
+
+                try {
+                    const response =
+                        await fetch(
+                            "/api/auth/logout",
+                            {
+                                method:
+                                    "POST",
+                            }
+                        );
+
+
+                    if (
+                        !response.ok
+                    ) {
+                        logoutButton.disabled =
+                            false;
+
+                        return;
+                    }
+
+
+                    window.location.href =
+                        "/login";
+
+                } catch (_) {
+
+                    logoutButton.disabled =
+                        false;
+
+                }
+            }
+        );
+    })();
+
+
+    /* =====================================================
+       SIDEBAR
+    ====================================================== */
+
+    (() => {
+        const sidebar =
+            document.getElementById(
+                "sidebar"
+            );
+
+        const toggle =
+            document.getElementById(
+                "sidebar-toggle"
+            );
+
+        const backdrop =
+            document.getElementById(
+                "sidebar-backdrop"
+            );
+
+
+        function openSidebar() {
+            sidebar.classList.add(
+                "mobile-open"
+            );
+
+            backdrop.classList.add(
+                "visible"
+            );
+        }
+
+
+        function closeSidebar() {
+            sidebar.classList.remove(
+                "mobile-open"
+            );
+
+            backdrop.classList.remove(
+                "visible"
+            );
+        }
+
+
+        toggle.addEventListener(
+            "click",
+            () => {
+                if (
+                    sidebar.classList
+                        .contains(
+                            "mobile-open"
+                        )
+                ) {
+                    closeSidebar();
+                } else {
+                    openSidebar();
+                }
+            }
+        );
+
+
+        backdrop.addEventListener(
+            "click",
+            closeSidebar
+        );
+
+
+        window.addEventListener(
+            "resize",
+            () => {
+                if (
+                    window.innerWidth
+                    > 800
+                ) {
+                    closeSidebar();
+                }
+            }
+        );
+    })();
+
+
+    loadDirectory();
+</script>
+
+</body>
+</html>

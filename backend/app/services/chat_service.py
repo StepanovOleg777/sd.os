@@ -16,6 +16,7 @@ class ChatService:
     async def process_message(
         self,
         message: str,
+        user_id: int,
     ) -> ChatServiceResult:
 
         message = message.strip()
@@ -23,7 +24,8 @@ class ChatService:
         try:
             answer, action = (
                 await openai_service.process(
-                    message
+                    message=message,
+                    user_id=user_id,
                 )
             )
 

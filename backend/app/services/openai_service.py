@@ -11,6 +11,10 @@ from backend.app.services.sim_card_tracker_client import (
     SimCardTrackerError,
     sim_card_tracker_client,
 )
+from backend.app.core.database import AsyncSessionLocal
+from backend.app.policies.data_access import (
+    filter_directory_contacts,
+)
 
 
 SYSTEM_PROMPT = """Ты — главный ИИ-интерфейс корпоративной системы SD.OS
@@ -413,6 +417,7 @@ class OpenAIService:
     async def process(
         self,
         message: str,
+        user_id: int,
     ) -> tuple[str, dict[str, Any] | None]:
         if not settings.OPENAI_API_KEY:
             return (
@@ -514,8 +519,9 @@ class OpenAIService:
 
                 result, new_action = (
                     await self._execute_tool(
-                        call.name,
-                        arguments,
+                        name=call.name,
+                        arguments=arguments,
+                        user_id=user_id,
                     )
                 )
 
@@ -575,6 +581,7 @@ class OpenAIService:
         self,
         name: str,
         arguments: dict,
+        user_id: int,
     ) -> tuple[Any, dict[str, Any] | None]:
 
         if name == "search_directory":
@@ -608,6 +615,15 @@ class OpenAIService:
                     )
                 )
 
+                async with AsyncSessionLocal() as db:
+                    contacts = (
+                        await filter_directory_contacts(
+                            db=db,
+                            user_id=user_id,
+                            contacts=contacts,
+                        )
+                    )
+
                 return (
                     {
                         "count": len(contacts),
@@ -626,10 +642,11 @@ class OpenAIService:
 
         if name == "prepare_call":
             result = await contact_agent.prepare_call(
-                arguments.get(
+                employee_query=arguments.get(
                     "query",
                     "",
-                )
+                ),
+                user_id=user_id,
             )
 
             return (

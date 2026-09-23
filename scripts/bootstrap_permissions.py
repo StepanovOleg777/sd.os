@@ -67,6 +67,30 @@ PERMISSIONS = [
         ),
     },
     {
+        "code": "directory.personal_phone.view",
+        "name": "Просмотр личных телефонов",
+        "description": (
+            "Позволяет видеть личные номера сотрудников "
+            "в корпоративном справочнике."
+        ),
+    },
+    {
+        "code": "directory.note.view",
+        "name": "Просмотр служебных заметок справочника",
+        "description": (
+            "Позволяет видеть служебные заметки "
+            "корпоративного справочника."
+        ),
+    },
+    {
+        "code": "contact.personal_phone.call",
+        "name": "Звонки на личные номера",
+        "description": (
+            "Позволяет использовать личный номер сотрудника "
+            "для звонка, если корпоративный номер отсутствует."
+        ),
+    },
+    {
         "code": "chat.use",
         "name": "Доступ к сообщениям",
         "description": (
@@ -114,6 +138,9 @@ ROLE_PERMISSIONS = {
         "chat.message.send": "all",
         "chat.announcement.department": "all_departments",
         "chat.announcement.company": "all",
+        "directory.personal_phone.view": "all",
+        "directory.note.view": "all",
+        "contact.personal_phone.call": "all",
     },
 
     "developer": {
@@ -128,6 +155,9 @@ ROLE_PERMISSIONS = {
         "chat.message.send": "all",
         "chat.announcement.department": "all_departments",
         "chat.announcement.company": "all",
+        "directory.personal_phone.view": "all",
+        "directory.note.view": "all",
+        "contact.personal_phone.call": "all",
     },
 
     "admin": {
@@ -140,6 +170,9 @@ ROLE_PERMISSIONS = {
         "audit.view": "all",
         "chat.use": "all",
         "chat.message.send": "all",
+        "directory.personal_phone.view": "all",
+        "directory.note.view": "all",
+        "contact.personal_phone.call": "all",
     },
 
     "department_head": {
@@ -149,6 +182,9 @@ ROLE_PERMISSIONS = {
         "chat.use": "all",
         "chat.message.send": "all",
         "chat.announcement.department": "own_department",
+        "directory.personal_phone.view": "all",
+        "directory.note.view": "all",
+        "contact.personal_phone.call": "all",
     },
 
     "employee": {

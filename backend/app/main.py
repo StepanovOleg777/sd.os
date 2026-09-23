@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from backend.app.api import sd_chat
+from backend.app.api import directory
 from backend.app.api.admin import (
     router as admin_router,
 )
@@ -73,6 +74,7 @@ app.include_router(admin_router)
 app.include_router(invite_router)
 app.include_router(password_reset_router)
 app.include_router(sd_chat.router)
+app.include_router(directory.router)
 
 
 @app.get(

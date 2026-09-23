@@ -1,3 +1,4 @@
+from copy import deepcopy
 import re
 from dataclasses import dataclass
 from typing import Any
@@ -6,6 +7,11 @@ from backend.app.services.sim_card_tracker_client import (
     SimCardTrackerClient,
     SimCardTrackerError,
     sim_card_tracker_client,
+)
+
+from backend.app.core.database import AsyncSessionLocal
+from backend.app.policies.action_access import (
+    can_call_personal_phone,
 )
 
 
@@ -54,6 +60,7 @@ class ContactAgent:
     async def prepare_call(
         self,
         employee_query: str,
+        user_id: int,
     ) -> ContactAgentResult:
         try:
             contacts = await self.search(
@@ -84,8 +91,35 @@ class ContactAgent:
                 intent="call",
             )
 
-        return self._build_call_result(
+        employee = deepcopy(
             contacts[0]
+        )
+
+        async with AsyncSessionLocal() as db:
+            personal_phone_allowed = (
+                await can_call_personal_phone(
+                    db=db,
+                    user_id=user_id,
+                    target_department_name=(
+                            employee.get("department")
+                            or ""
+                    ),
+                )
+            )
+
+        if not personal_phone_allowed:
+            phones = employee.get(
+                "phones"
+            )
+
+            if isinstance(phones, dict):
+                phones.pop(
+                    "personal",
+                    None,
+                )
+
+        return self._build_call_result(
+            employee
         )
 
     async def prepare_email(
