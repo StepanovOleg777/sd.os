@@ -50,6 +50,9 @@ from backend.app.services.permission_service import (
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
 
 
