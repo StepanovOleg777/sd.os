@@ -9,6 +9,14 @@ const voiceButton = document.getElementById("voice-button");
 
 const composer = document.querySelector(".composer");
 
+const newChatButton =
+    document.getElementById("ai-new-chat");
+
+const conversationList =
+    document.getElementById("ai-conversation-list");
+
+let currentConversationId = null;
+
 
 // =========================================================
 // UI
@@ -464,6 +472,616 @@ function hideWelcome() {
 }
 
 
+function showWelcome() {
+    welcome.classList.remove(
+        "hidden"
+    );
+}
+
+
+// =========================================================
+// AI conversations
+// =========================================================
+
+function clearMessages() {
+    messages.innerHTML = "";
+}
+
+
+function setActiveConversationItem(
+    conversationId
+) {
+    if (!conversationList) {
+        return;
+    }
+
+    conversationList
+        .querySelectorAll(
+            ".ai-conversation-row"
+        )
+        .forEach(item => {
+
+            item.classList.toggle(
+                "active",
+                item.dataset.conversationId
+                === conversationId
+            );
+        });
+}
+
+
+function renderConversationList(
+    conversations
+) {
+    if (!conversationList) {
+        return;
+    }
+
+    conversationList.innerHTML = "";
+
+    if (
+        !Array.isArray(conversations)
+        ||
+        conversations.length === 0
+    ) {
+        const empty =
+            document.createElement("div");
+
+        empty.className =
+            "ai-conversation-list-empty";
+
+        empty.textContent =
+            "Пока нет чатов";
+
+        conversationList.appendChild(
+            empty
+        );
+
+        return;
+    }
+
+    conversations.forEach(
+        conversation => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "ai-conversation-row";
+
+            row.dataset.conversationId =
+                conversation.conversation_id;
+
+
+            if (
+                conversation.conversation_id
+                === currentConversationId
+            ) {
+                row.classList.add(
+                    "active"
+                );
+            }
+
+
+            const openButton =
+                document.createElement("button");
+
+            openButton.type =
+                "button";
+
+            openButton.className =
+                "ai-conversation-item";
+
+            openButton.textContent =
+                conversation.title
+                || "Новый чат";
+
+
+            openButton.addEventListener(
+                "click",
+                async () => {
+                    await openConversation(
+                        conversation
+                            .conversation_id
+                    );
+                }
+            );
+
+
+            const renameButton =
+                document.createElement("button");
+
+            renameButton.type =
+                "button";
+
+            renameButton.className =
+                "ai-conversation-rename";
+
+            renameButton.setAttribute(
+                "aria-label",
+                "Переименовать чат"
+            );
+
+            renameButton.setAttribute(
+                "title",
+                "Переименовать чат"
+            );
+
+            renameButton.textContent =
+                "✎";
+
+
+            renameButton.addEventListener(
+                "click",
+                async event => {
+
+                    event.stopPropagation();
+
+                    await renameConversation(
+                        conversation,
+                        row,
+                        openButton
+                    );
+                }
+            );
+
+
+            const deleteButton =
+                document.createElement("button");
+
+            deleteButton.type =
+                "button";
+
+            deleteButton.className =
+                "ai-conversation-delete";
+
+            deleteButton.setAttribute(
+                "aria-label",
+                "Удалить чат"
+            );
+
+            deleteButton.setAttribute(
+                "title",
+                "Удалить чат"
+            );
+
+            deleteButton.textContent =
+                "×";
+
+
+            deleteButton.addEventListener(
+                "click",
+                async event => {
+
+                    event.stopPropagation();
+
+                    await deleteConversation(
+                        conversation
+                            .conversation_id
+                    );
+                }
+            );
+
+
+            row.appendChild(
+                openButton
+            );
+
+            row.appendChild(
+                renameButton
+            );
+
+            row.appendChild(
+                deleteButton
+            );
+
+            conversationList.appendChild(
+                row
+            );
+        }
+    );
+}
+
+
+async function loadConversations() {
+    if (!conversationList) {
+        return;
+    }
+
+    try {
+        const response =
+            await fetch(
+                "/api/chat/conversations"
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const data =
+            await response.json();
+
+        renderConversationList(
+            data
+        );
+
+    } catch (error) {
+        console.error(
+            "Не удалось загрузить AI-чаты:",
+            error
+        );
+
+        conversationList.innerHTML = "";
+
+        const errorElement =
+            document.createElement("div");
+
+        errorElement.className =
+            "ai-conversation-list-empty";
+
+        errorElement.textContent =
+            "Не удалось загрузить чаты";
+
+        conversationList.appendChild(
+            errorElement
+        );
+    }
+}
+
+
+async function openConversation(
+    conversationId
+) {
+    setLoading(true);
+
+    try {
+        const response =
+            await fetch(
+                `/api/chat/conversations/${conversationId}`
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const data =
+            await response.json();
+
+        currentConversationId =
+            data.conversation_id;
+
+        clearMessages();
+
+        const history =
+            Array.isArray(data.messages)
+                ? data.messages
+                : [];
+
+        if (history.length === 0) {
+            showWelcome();
+        } else {
+            hideWelcome();
+
+            history.forEach(
+                message => {
+                    if (
+                        message.role !== "user"
+                        &&
+                        message.role !== "assistant"
+                    ) {
+                        return;
+                    }
+
+                    addMessage(
+                        message.role,
+                        message.text || ""
+                    );
+                }
+            );
+        }
+
+        setActiveConversationItem(
+            currentConversationId
+        );
+
+    } catch (error) {
+        console.error(
+            "Не удалось открыть AI-чат:",
+            error
+        );
+
+    } finally {
+        setLoading(false);
+        input.focus();
+    }
+}
+
+
+async function renameConversation(
+    conversation,
+    row,
+    openButton
+) {
+    if (
+        row.classList.contains(
+            "editing"
+        )
+    ) {
+        return;
+    }
+
+    row.classList.add(
+        "editing"
+    );
+
+
+    const originalTitle =
+        conversation.title
+        || "Новый чат";
+
+
+    const inputElement =
+        document.createElement("input");
+
+    inputElement.type =
+        "text";
+
+    inputElement.className =
+        "ai-conversation-edit-input";
+
+    inputElement.value =
+        originalTitle;
+
+    inputElement.maxLength =
+        255;
+
+
+    openButton.replaceWith(
+        inputElement
+    );
+
+
+    const finishEditing =
+        async save => {
+
+            if (
+                !row.classList.contains(
+                    "editing"
+                )
+            ) {
+                return;
+            }
+
+            const title =
+                inputElement.value.trim();
+
+
+            if (!save) {
+                row.classList.remove(
+                    "editing"
+                );
+
+                inputElement.replaceWith(
+                    openButton
+                );
+
+                return;
+            }
+
+
+            if (!title) {
+                inputElement.focus();
+
+                return;
+            }
+
+
+            if (
+                title === originalTitle
+            ) {
+                row.classList.remove(
+                    "editing"
+                );
+
+                inputElement.replaceWith(
+                    openButton
+                );
+
+                return;
+            }
+
+
+            inputElement.disabled =
+                true;
+
+
+            try {
+                const response =
+                    await fetch(
+                        `/api/chat/conversations/${conversation.conversation_id}`,
+                        {
+                            method: "PATCH",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    title
+                                })
+                        }
+                    );
+
+
+                if (!response.ok) {
+                    throw new Error(
+                        `HTTP ${response.status}`
+                    );
+                }
+
+
+                conversation.title =
+                    title;
+
+                openButton.textContent =
+                    title;
+
+
+                row.classList.remove(
+                    "editing"
+                );
+
+                inputElement.replaceWith(
+                    openButton
+                );
+
+
+            } catch (error) {
+                console.error(
+                    "Не удалось переименовать AI-чат:",
+                    error
+                );
+
+                inputElement.disabled =
+                    false;
+
+                inputElement.focus();
+            }
+        };
+
+
+    inputElement.addEventListener(
+        "keydown",
+        async event => {
+
+            if (
+                event.key === "Enter"
+            ) {
+                event.preventDefault();
+
+                await finishEditing(
+                    true
+                );
+
+                return;
+            }
+
+
+            if (
+                event.key === "Escape"
+            ) {
+                event.preventDefault();
+
+                await finishEditing(
+                    false
+                );
+            }
+        }
+    );
+
+
+    inputElement.addEventListener(
+        "blur",
+        async () => {
+            await finishEditing(
+                true
+            );
+        }
+    );
+
+
+    inputElement.focus();
+
+    inputElement.select();
+}
+
+
+async function deleteConversation(
+    conversationId
+) {
+    const confirmed =
+        window.confirm(
+            "Удалить этот чат?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
+
+
+    try {
+        const response =
+            await fetch(
+                `/api/chat/conversations/${conversationId}`,
+                {
+                    method: "DELETE"
+                }
+            );
+
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+
+        if (
+            currentConversationId
+            === conversationId
+        ) {
+            startNewConversation();
+        }
+
+
+        await loadConversations();
+
+    } catch (error) {
+        console.error(
+            "Не удалось удалить AI-чат:",
+            error
+        );
+
+        window.alert(
+            "Не удалось удалить чат."
+        );
+    }
+}
+
+
+function startNewConversation() {
+    currentConversationId = null;
+
+    clearMessages();
+    showWelcome();
+
+    setActiveConversationItem(
+        null
+    );
+
+    input.value = "";
+    resizeInput();
+    input.focus();
+}
+
+
+if (newChatButton) {
+    newChatButton.addEventListener(
+        "click",
+        startNewConversation
+    );
+}
+
+
+loadConversations();
+
+
 function setLoading(value) {
     sendButton.disabled =
         value;
@@ -491,6 +1109,9 @@ function resizeInput() {
 // =========================================================
 
 async function sendMessage(message) {
+    const wasNewConversation =
+        currentConversationId === null;
+
     hideWelcome();
 
 
@@ -533,7 +1154,9 @@ async function sendMessage(message) {
 
                     body:
                         JSON.stringify({
-                            message
+                            message,
+                            conversation_id:
+                                currentConversationId
                         })
                 }
             );
@@ -549,6 +1172,10 @@ async function sendMessage(message) {
         const data =
             await response.json();
 
+        if (data.conversation_id) {
+            currentConversationId =
+                data.conversation_id;
+        }
 
         typingMessage.remove();
 
@@ -556,6 +1183,15 @@ async function sendMessage(message) {
         renderAssistantResponse(
             data
         );
+
+
+        if (wasNewConversation) {
+            await loadConversations();
+        } else {
+            setActiveConversationItem(
+                currentConversationId
+            );
+        }
 
     } catch (error) {
         console.error(error);
@@ -618,8 +1254,6 @@ function getFileExtension(
 
     return "webm";
 }
-
-
 // =========================================================
 // Waveform visibility
 // =========================================================
@@ -1633,8 +2267,6 @@ function startAudioAnalysis() {
             update
         );
 }
-
-
 // =========================================================
 // Stop audio analysis
 // =========================================================

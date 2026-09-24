@@ -19,6 +19,14 @@ from backend.app.models.permission import (
 )
 from backend.app.models.audit_log import AuditLog
 
+from backend.app.models.ai import (
+    AIConversation,
+    AIMessage,
+    AIProject,
+    AIProviderState,
+    AIRun,
+)
+
 from backend.app.models.sd_chat import (
     ChatAnnouncement,
     ChatAnnouncementRecipient,
@@ -26,6 +34,7 @@ from backend.app.models.sd_chat import (
     ChatMessage,
     ChatParticipant,
 )
+
 
 
 

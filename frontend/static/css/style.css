@@ -2205,3 +2205,434 @@ a {
 
     flex-shrink: 0;
 }
+
+/* =========================================================
+   AI CONVERSATIONS
+========================================================= */
+
+.ai-conversations-panel {
+    flex: 1;
+
+    min-height: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    padding:
+        14px
+        10px
+        10px;
+
+    border-top:
+        1px solid
+        var(--border);
+
+    overflow: hidden;
+}
+
+
+.ai-new-chat {
+    flex-shrink: 0;
+
+    width: 100%;
+    min-height: 40px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    padding:
+        0
+        12px;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius: 10px;
+
+    background:
+        var(--bg-elevated);
+
+    color:
+        var(--text-primary);
+
+    font-size: 13px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease;
+}
+
+
+.ai-new-chat:hover {
+    background:
+        var(--bg-primary);
+}
+
+
+.ai-new-chat-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+
+.ai-conversations-title {
+    flex-shrink: 0;
+
+    padding:
+        14px
+        4px
+        8px;
+
+    color:
+        var(--text-muted);
+
+    font-size: 10px;
+    font-weight: 600;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.08em;
+}
+
+
+.ai-conversation-list {
+    flex: 1;
+
+    min-height: 0;
+
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    overscroll-behavior: contain;
+
+    padding-right: 2px;
+
+    scrollbar-width: thin;
+}
+
+
+.ai-conversation-row {
+    width: 100%;
+
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+
+    margin-bottom: 4px;
+
+    border-radius: 8px;
+
+    background:
+        transparent;
+
+    transition:
+        background 0.16s ease;
+}
+
+
+.ai-conversation-row:hover {
+    background:
+        var(--bg-elevated);
+}
+
+
+.ai-conversation-row.active {
+    background:
+        var(--bg-elevated);
+}
+
+
+.ai-conversation-item {
+    flex: 1;
+
+    min-width: 0;
+
+    display: block;
+
+    padding:
+        9px
+        6px
+        9px
+        10px;
+
+    border: 0;
+
+    background:
+        transparent;
+
+    color:
+        var(--text-secondary);
+
+    text-align: left;
+
+    font-size: 12px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    cursor: pointer;
+}
+
+
+.ai-conversation-row.active
+.ai-conversation-item {
+    color:
+        var(--text-primary);
+}
+
+
+.ai-conversation-rename {
+    width: 30px;
+    height: 30px;
+
+    flex:
+        0
+        0
+        30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+
+    border-radius: 7px;
+
+    background:
+        transparent;
+
+    color:
+        var(--text-muted);
+
+    font-size: 15px;
+
+    cursor: pointer;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.15s ease,
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+
+.ai-conversation-row:hover
+.ai-conversation-rename,
+.ai-conversation-row.active
+.ai-conversation-rename {
+    opacity: 1;
+}
+
+
+.ai-conversation-rename:hover {
+    background:
+        var(--bg-primary);
+
+    color:
+        var(--text-primary);
+}
+
+
+@media (max-width: 800px) {
+
+    .ai-conversation-rename {
+        opacity: 1;
+    }
+}
+
+
+.ai-conversation-row.editing {
+    background:
+        var(--bg-elevated);
+}
+
+
+.ai-conversation-edit-input {
+    flex: 1;
+
+    min-width: 0;
+
+    height: 30px;
+
+    margin:
+        4px
+        4px
+        4px
+        6px;
+
+    padding:
+        0
+        8px;
+
+    border:
+        1px solid
+        var(--border);
+
+    border-radius: 7px;
+
+    outline: none;
+
+    background:
+        var(--bg-primary);
+
+    color:
+        var(--text-primary);
+
+    font-size: 12px;
+}
+
+
+.ai-conversation-edit-input:focus {
+    border-color:
+        var(--accent);
+}
+
+
+.ai-conversation-row.editing
+.ai-conversation-rename,
+.ai-conversation-row.editing
+.ai-conversation-delete {
+    opacity: 0;
+
+    pointer-events: none;
+}
+
+
+.ai-conversation-delete {
+    width: 30px;
+    height: 30px;
+
+    flex:
+        0
+        0
+        30px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin-right: 3px;
+
+    border: 0;
+
+    border-radius: 7px;
+
+    background:
+        transparent;
+
+    color:
+        var(--text-muted);
+
+    font-size: 17px;
+    line-height: 1;
+
+    cursor: pointer;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.15s ease,
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+
+.ai-conversation-row:hover
+.ai-conversation-delete,
+.ai-conversation-row.active
+.ai-conversation-delete {
+    opacity: 1;
+}
+
+
+.ai-conversation-delete:hover {
+    background:
+        rgba(
+            220,
+            70,
+            80,
+            0.14
+        );
+
+    color:
+        #e06a73;
+}
+
+
+.ai-conversation-list-empty {
+    padding:
+        8px
+        10px;
+
+    color:
+        var(--text-muted);
+
+    font-size: 11px;
+}
+
+
+@media (max-width: 800px) {
+
+    .ai-conversation-delete {
+        opacity: 1;
+    }
+}
+
+/* =========================================================
+   AI CHAT SCROLLBAR
+========================================================= */
+
+.ai-conversation-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+
+.ai-conversation-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+
+.ai-conversation-list::-webkit-scrollbar-thumb {
+    background:
+        rgba(
+            140,
+            140,
+            140,
+            0.45
+        );
+
+    border-radius: 999px;
+}
+
+
+.ai-conversation-list::-webkit-scrollbar-thumb:hover {
+    background:
+        rgba(
+            140,
+            140,
+            140,
+            0.7
+        );
+}
+
+
+/* Firefox */
+
+.ai-conversation-list {
+    scrollbar-color:
+        rgba(
+            140,
+            140,
+            140,
+            0.45
+        )
+        transparent;
+}

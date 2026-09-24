@@ -22,6 +22,35 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: sdos-redis
+    restart: unless-stopped
+
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes"
+      ]
+
+    volumes:
+      - redis_data:/data
+
+    ports:
+      - "127.0.0.1:6379:6379"
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   app:
     build:
       context: .
@@ -37,8 +66,12 @@ services:
       postgres:
         condition: service_healthy
 
+      redis:
+        condition: service_healthy
+
     ports:
       - "127.0.0.1:8000:8000"
 
 volumes:
   postgres_data:
+  redis_data:
