@@ -7,10 +7,11 @@ faster-whisper==1.2.1
 httpx
 openai
 rapidfuzz
-sqlalchemy
+SQLAlchemy[asyncio]
 asyncpg
 alembic
 pwdlib[argon2]
 aiosmtplib
 redis
 uuid6
+greenlet
