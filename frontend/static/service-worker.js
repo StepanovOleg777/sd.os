@@ -1,4 +1,4 @@
-const CACHE_NAME = "sdos-static-v1";
+const CACHE_NAME = "sdos-static-v2";
 
 const PRECACHE_URLS = [
     "/static/manifest.webmanifest",
@@ -59,6 +59,65 @@ self.addEventListener("fetch", (event) => {
         return;
     }
 
+
+    // =====================================================
+    // CSS / JS
+    // Всегда сначала сеть, кэш только как резерв
+    // =====================================================
+
+    if (
+        url.pathname.endsWith(".css")
+        ||
+        url.pathname.endsWith(".js")
+    ) {
+        event.respondWith(
+            fetch(request)
+                .then((networkResponse) => {
+                    if (
+                        !networkResponse
+                        ||
+                        networkResponse.status !== 200
+                    ) {
+                        return networkResponse;
+                    }
+
+                    const responseToCache =
+                        networkResponse.clone();
+
+                    caches
+                        .open(CACHE_NAME)
+                        .then((cache) => {
+                            cache.put(
+                                request,
+                                responseToCache
+                            );
+                        });
+
+                    return networkResponse;
+                })
+                .catch(async () => {
+                    const cachedResponse =
+                        await caches.match(request);
+
+                    if (cachedResponse) {
+                        return cachedResponse;
+                    }
+
+                    throw new Error(
+                        "Network unavailable and no cached response."
+                    );
+                })
+        );
+
+        return;
+    }
+
+
+    // =====================================================
+    // Остальная статика
+    // Кэш сначала, сеть если нет в кэше
+    // =====================================================
+
     event.respondWith(
         caches
             .match(request)
@@ -70,7 +129,8 @@ self.addEventListener("fetch", (event) => {
                 return fetch(request).then(
                     (networkResponse) => {
                         if (
-                            !networkResponse ||
+                            !networkResponse
+                            ||
                             networkResponse.status !== 200
                         ) {
                             return networkResponse;
