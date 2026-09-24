@@ -180,8 +180,7 @@
                 minmax(180px, 1.2fr)
                 minmax(220px, 1.3fr)
                 minmax(250px, 1.5fr)
-                minmax(250px, 1.5fr)
-                130px;
+                minmax(250px, 1.5fr);
 
             align-items: start;
 
@@ -478,10 +477,6 @@
                 Стало
             </div>
 
-            <div>
-                IP
-            </div>
-
         </div>
 
 
@@ -490,7 +485,7 @@
             <div class="audit-row">
 
                 <div class="cell">
-                    {{ item.log.created_at.strftime("%d.%m.%Y %H:%M:%S") }}
+                    {{ item.created_at_display }}
                 </div>
 
 
@@ -594,23 +589,6 @@
                             {% endfor %}
 
                         </div>
-
-                    {% else %}
-
-                        <span class="empty-value">
-                            —
-                        </span>
-
-                    {% endif %}
-
-                </div>
-
-
-                <div class="cell">
-
-                    {% if item.log.ip_address %}
-
-                        {{ item.log.ip_address }}
 
                     {% else %}
 

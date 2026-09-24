@@ -57,6 +57,7 @@ from backend.app.services.invite_service import (
 from backend.app.services.permission_service import (
     permission_service,
 )
+from datetime import timezone, timedelta
 
 
 router = APIRouter(
@@ -108,6 +109,26 @@ MESSENGER_PERMISSION_CODES = {
 
 
 AUDIT_PAGE_SIZE = 50
+
+MOSCOW_TZ = timezone(
+    timedelta(hours=3)
+)
+
+
+def format_audit_datetime(value) -> str:
+    if value is None:
+        return "—"
+
+    if value.tzinfo is None:
+        value = value.replace(
+            tzinfo=timezone.utc
+        )
+
+    return (
+        value
+        .astimezone(MOSCOW_TZ)
+        .strftime("%d.%m.%Y %H:%M:%S")
+    )
 
 
 # =========================================================
@@ -2994,6 +3015,9 @@ async def audit_page(
             audit_items.append(
                 {
                     "log": log,
+                    "created_at_display": format_audit_datetime(
+                        log.created_at
+                    ),
                     "actor": (
                         users_by_id.get(
                             log.actor_user_id
