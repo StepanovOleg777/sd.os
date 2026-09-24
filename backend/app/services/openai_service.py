@@ -1,6 +1,8 @@
 import json
 import time
 from typing import Any
+from sqlalchemy import select
+from datetime import datetime, timezone
 
 from openai import AsyncOpenAI, DefaultAsyncHttpxClient
 
@@ -12,6 +14,10 @@ from backend.app.services.sim_card_tracker_client import (
     sim_card_tracker_client,
 )
 from backend.app.core.database import AsyncSessionLocal
+from backend.app.models.ai import (
+    AIProviderState,
+    AIRun,
+)
 from backend.app.policies.data_access import (
     filter_directory_contacts,
 )
@@ -412,12 +418,162 @@ class OpenAIService:
             ),
         )
 
-        self.previous_response_id: str | None = None
+    async def _get_previous_response_id(
+            self,
+            conversation_id: int,
+    ) -> str | None:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(AIProviderState).where(
+                    AIProviderState.conversation_id
+                    == conversation_id,
+                    AIProviderState.provider_code
+                     == "openai",
+                    AIProviderState.context_key
+                    == "supervisor",
+                )
+            )
+
+            provider_state = (
+                result.scalar_one_or_none()
+            )
+
+            if provider_state is None:
+                return None
+
+            state = provider_state.state
+
+            if not isinstance(state, dict):
+                return None
+
+            previous_response_id = state.get(
+                "previous_response_id"
+            )
+
+            if not isinstance(
+                    previous_response_id,
+                    str,
+            ):
+                return None
+
+            return previous_response_id
+
+    async def _save_previous_response_id(
+            self,
+            conversation_id: int,
+            response_id: str,
+    ) -> None:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(AIProviderState).where(
+                    AIProviderState.conversation_id
+                    == conversation_id,
+                    AIProviderState.provider_code
+                    == "openai",
+                    AIProviderState.context_key
+                    == "supervisor",
+                )
+            )
+
+            provider_state = (
+                result.scalar_one_or_none()
+            )
+
+            state = {
+                "previous_response_id": response_id,
+            }
+
+            if provider_state is None:
+                provider_state = AIProviderState(
+                    conversation_id=conversation_id,
+                    provider_code="openai",
+                    context_key="supervisor",
+                    model_code=settings.OPENAI_MODEL,
+                    state=state,
+                )
+
+                db.add(provider_state)
+
+            else:
+                provider_state.model_code = (
+                    settings.OPENAI_MODEL
+                )
+                provider_state.state = state
+
+            await db.commit()
+
+    async def _create_run(
+        self,
+        conversation_id: int,
+        user_id: int,
+    ) -> int:
+        async with AsyncSessionLocal() as db:
+            run = AIRun(
+                conversation_id=conversation_id,
+                user_id=user_id,
+                agent_code="supervisor",
+                capability="text.reasoning",
+                provider_code="openai",
+                model_code=settings.OPENAI_MODEL,
+                status="running",
+            )
+
+            db.add(run)
+
+            await db.commit()
+            await db.refresh(run)
+
+            return run.id
+
+    async def _complete_run(
+        self,
+        run_id: int,
+        response_id: str,
+    ) -> None:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(AIRun).where(
+                    AIRun.id == run_id
+                )
+            )
+
+            run = result.scalar_one()
+
+            run.provider_response_id = response_id
+            run.status = "completed"
+            run.finished_at = datetime.now(
+                timezone.utc
+            )
+
+            await db.commit()
+
+    async def _fail_run(
+        self,
+        run_id: int,
+        error: Exception,
+    ) -> None:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(AIRun).where(
+                    AIRun.id == run_id
+                )
+            )
+
+            run = result.scalar_one()
+
+            run.status = "failed"
+            run.error_message = str(error)
+            run.finished_at = datetime.now(
+                timezone.utc
+            )
+
+            await db.commit()
 
     async def process(
         self,
         message: str,
         user_id: int,
+        conversation_id: int,
     ) -> tuple[str, dict[str, Any] | None]:
         if not settings.OPENAI_API_KEY:
             return (
@@ -425,11 +581,58 @@ class OpenAIService:
                 None,
             )
 
+        run_id = await self._create_run(
+            conversation_id=conversation_id,
+            user_id=user_id,
+        )
+
+        try:
+            answer, action, response_id = (
+                await self._process_request(
+                    message=message,
+                    user_id=user_id,
+                    conversation_id=conversation_id,
+                )
+            )
+
+            await self._complete_run(
+                run_id=run_id,
+                response_id=response_id,
+            )
+
+            return (
+                answer,
+                action,
+            )
+
+        except Exception as exc:
+            await self._fail_run(
+                run_id=run_id,
+                error=exc,
+            )
+            raise
+
+    async def _process_request(
+        self,
+        message: str,
+        user_id: int,
+        conversation_id: int,
+    ) -> tuple[
+        str,
+        dict[str, Any] | None,
+        str,
+    ]:
         process_started = time.perf_counter()
 
         print()
         print("[TIMING] ===== NEW REQUEST =====")
         print(f"[TIMING] Message: {message}")
+
+        previous_response_id = (
+            await self._get_previous_response_id(
+                conversation_id=conversation_id,
+            )
+        )
 
         request_kwargs = {
             "model": settings.OPENAI_MODEL,
@@ -438,9 +641,9 @@ class OpenAIService:
             "tools": TOOLS,
         }
 
-        if self.previous_response_id:
+        if previous_response_id:
             request_kwargs["previous_response_id"] = (
-                self.previous_response_id
+                previous_response_id
             )
 
         request_started = time.perf_counter()
@@ -472,7 +675,10 @@ class OpenAIService:
             ]
 
             if not function_calls:
-                self.previous_response_id = response.id
+                await self._save_previous_response_id(
+                    conversation_id=conversation_id,
+                    response_id=response.id,
+                )
 
                 answer = response.output_text.strip()
 
@@ -498,6 +704,7 @@ class OpenAIService:
                 return (
                     answer,
                     action,
+                    response.id,
                 )
 
             tool_outputs = []

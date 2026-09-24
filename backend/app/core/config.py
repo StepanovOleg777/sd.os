@@ -66,6 +66,11 @@ class Settings:
         "",
     )
 
+    REDIS_URL = os.getenv(
+        "REDIS_URL",
+        "redis://redis:6379/0",
+    )
+
     SMTP_HOST = os.getenv(
         "SMTP_HOST",
         "",

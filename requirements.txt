@@ -12,3 +12,5 @@ asyncpg
 alembic
 pwdlib[argon2]
 aiosmtplib
+redis
+uuid6

@@ -9,6 +9,7 @@ const voiceButton = document.getElementById("voice-button");
 
 const composer = document.querySelector(".composer");
 
+let currentConversationId = null;
 
 // =========================================================
 // UI
@@ -533,7 +534,9 @@ async function sendMessage(message) {
 
                     body:
                         JSON.stringify({
-                            message
+                            message,
+                            conversation_id:
+                                currentConversationId
                         })
                 }
             );
@@ -549,6 +552,10 @@ async function sendMessage(message) {
         const data =
             await response.json();
 
+            if (data.conversation_id) {
+                currentConversationId =
+                    data.conversation_id;
+            }
 
         typingMessage.remove();
 

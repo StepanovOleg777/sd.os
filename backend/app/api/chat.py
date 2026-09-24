@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from typing import Literal
 
 from fastapi import APIRouter, Depends
@@ -22,6 +24,8 @@ class ChatRequest(BaseModel):
         min_length=1,
         max_length=10_000,
     )
+
+    conversation_id: UUID | None = None
 
 
 class ActionChoice(BaseModel):
@@ -54,6 +58,7 @@ class ChatAction(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
+    conversation_id: UUID
     action: ChatAction | None = None
 
 
@@ -68,9 +73,15 @@ async def send_message(
     result = await chat_service.process_message(
         message=payload.message,
         user_id=user.id,
+        conversation_public_id=(
+            payload.conversation_id
+        ),
     )
 
     return ChatResponse(
         answer=result.answer,
+        conversation_id=(
+            result.conversation_public_id
+        ),
         action=result.action,
     )
