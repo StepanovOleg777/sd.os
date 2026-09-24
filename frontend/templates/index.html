@@ -33,6 +33,21 @@
         href="{{ url_for('static', path='/css/style.css') }}"
     >
 
+    <link
+        rel="manifest"
+        href="/static/manifest.webmanifest"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="/static/icons/apple-touch-icon.png"
+    >
+
+    <meta
+        name="theme-color"
+        content="#000000"
+    >
+
     <style>
         /* =====================================================
            REQUIRED ANNOUNCEMENT MODAL
@@ -1545,6 +1560,21 @@
     })();
 
     {% endif %}
+</script>
+
+<script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker
+                .register("/service-worker.js")
+                .catch((error) => {
+                    console.error(
+                        "Service Worker registration failed:",
+                        error
+                    );
+                });
+        });
+    }
 </script>
 
 </body>

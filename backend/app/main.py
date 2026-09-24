@@ -45,6 +45,7 @@ from backend.app.models.user import User
 from backend.app.services.permission_service import (
     permission_service,
 )
+from fastapi.responses import FileResponse
 
 
 app = FastAPI(
@@ -63,6 +64,17 @@ app.mount(
     ),
     name="static",
 )
+
+
+@app.get(
+    "/service-worker.js",
+    include_in_schema=False,
+)
+async def service_worker():
+    return FileResponse(
+        STATIC_DIR / "service-worker.js",
+        media_type="application/javascript",
+    )
 
 
 templates = Jinja2Templates(
